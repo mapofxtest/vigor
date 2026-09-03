@@ -7,7 +7,13 @@
     <h1>{{ torneo.nombre }}</h1>
     <p class="muted">{{ torneo.categoria }} · Temporada {{ torneo.temporada }} · {{ torneo.estado }}</p>
   </div>
-  <a href="{{ url_for('admin_torneos') }}" class="btn secondary">Ver torneos</a>
+  <div style="display:flex;gap:10px;align-items:center">
+    <a href="{{ url_for('admin_torneos') }}" class="btn secondary">Ver torneos</a>
+    <form method="post" action="{{ url_for('reiniciar_demo') }}"
+          onsubmit="return confirm('Esto borra cualquier inscripción hecha en vivo y regenera los datos demo desde cero. ¿Continuar?');">
+      <button class="btn secondary small" type="submit">Reiniciar datos demo</button>
+    </form>
+  </div>
 </div>
 
 <div class="scoreboard">

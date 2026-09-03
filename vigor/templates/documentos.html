@@ -29,8 +29,8 @@
   </thead>
   <tbody>
     {% for d in docs %}
-    <tr>
-      <td>{{ d.jugador_nombre }}</td>
+    <tr {% if 'Jugador Demo' in d.jugador_nombre %}class="highlight"{% endif %}>
+      <td>{{ d.jugador_nombre }}{% if 'Jugador Demo' in d.jugador_nombre %} <span class="tag" style="border:none;padding:0;font-size:0.78rem">★ demo</span>{% endif %}</td>
       <td>{{ d.club_nombre }}</td>
       <td>{{ d.tipo }}</td>
       <td class="muted" style="max-width:280px">{{ d.comentario_ia }}{% if d.confianza_ia %} · {{ d.confianza_ia }}% de confianza{% endif %}</td>

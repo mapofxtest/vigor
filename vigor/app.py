@@ -31,6 +31,13 @@ def landing():
 
 # --------------------------------------------------------------- admin ----
 
+@app.route("/admin/reiniciar-demo", methods=["POST"])
+def reiniciar_demo():
+    db.build_database()
+    flash("Datos demo reiniciados: todo vuelve al estado inicial, listo para presentar.", "success")
+    return redirect(url_for("admin_dashboard"))
+
+
 @app.route("/admin")
 def admin_dashboard():
     conn = db.get_connection()
@@ -221,6 +228,22 @@ def seguimiento():
 
 # ------------------------------------------------------------ inscripcion --
 
+COMENTARIOS_IA = {
+    "Aprobado": "La IA confirma que el documento corresponde al tipo solicitado y los datos coinciden con el registro del jugador.",
+    "Rechazado": "La IA no pudo verificar el documento: la imagen está borrosa, no corresponde al tipo solicitado, o parece ser una copia/descarga digital en vez del original físico. Vuelve a cargarlo.",
+    "Pendiente": "El documento requiere revisión manual de un administrador antes de aprobarse.",
+}
+
+
+def _simular_revision_ia(archivo):
+    """Simula la carga y revisión automática de un documento por IA."""
+    if not archivo or not archivo.filename:
+        return None, "Pendiente", "Aún no se ha cargado este documento.", None
+    resultado = random.choices(["Aprobado", "Rechazado", "Pendiente"], weights=[70, 15, 15], k=1)[0]
+    confianza = random.randint(60, 99) if resultado != "Pendiente" else None
+    return archivo.filename, resultado, COMENTARIOS_IA[resultado], confianza
+
+
 @app.route("/inscripcion", methods=["GET", "POST"])
 def inscripcion():
     conn = db.get_connection()
@@ -267,18 +290,22 @@ def inscripcion_formulario(codigo):
              request.form["padre_telefono"], request.form.get("observaciones_medicas") or "Ninguna"))
         jugador_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 
-        for tipo in db.TIPOS_DOC:
-            conn.execute("""INSERT INTO documentos (jugador_id, tipo, nombre_archivo, estado, comentario_ia, fecha_carga)
-                             VALUES (?,?,?,?,?,?)""",
-                         (jugador_id, tipo, "pendiente_de_carga.pdf", "Pendiente",
-                          "En espera de que el acudiente suba el documento.", date.today().isoformat()))
+        for d in db.DOCUMENTOS_REQUERIDOS:
+            archivo = request.files.get(f"archivo_{d['campo']}")
+            nombre_archivo, estado, comentario, confianza = _simular_revision_ia(archivo)
+            conn.execute("""INSERT INTO documentos
+                (jugador_id, tipo, nombre_archivo, estado, comentario_ia, confianza_ia, fecha_carga)
+                VALUES (?,?,?,?,?,?,?)""",
+                (jugador_id, d["tipo"], nombre_archivo, estado, comentario, confianza,
+                 date.today().isoformat() if nombre_archivo else None))
         conn.commit()
         conn.close()
         return redirect(url_for("inscripcion_confirmacion", jugador_id=jugador_id))
 
     conn.close()
     return render_template("inscripcion_formulario.html", club=club, categorias=db.CATEGORIAS,
-                            posiciones=db.POSICIONES, eps_list=db.EPS_LIST)
+                            posiciones=db.POSICIONES, eps_list=db.EPS_LIST,
+                            documentos_requeridos=db.DOCUMENTOS_REQUERIDOS)
 
 
 @app.route("/inscripcion/confirmacion/<int:jugador_id>")
@@ -299,19 +326,13 @@ def subir_documento(doc_id):
     conn = db.get_connection()
     doc = one(conn, "SELECT * FROM documentos WHERE id=?", (doc_id,))
     archivo = request.files.get("archivo")
-    nombre_archivo = archivo.filename if archivo and archivo.filename else f"documento_{doc_id}.pdf"
-
-    resultado = random.choices(
-        ["Aprobado", "Rechazado", "Pendiente"], weights=[70, 15, 15], k=1)[0]
-    comentarios = {
-        "Aprobado": "La IA confirma que el documento corresponde al tipo solicitado y los datos coinciden con el registro del jugador.",
-        "Rechazado": "La IA no pudo verificar el documento: la imagen está borrosa o no corresponde al tipo solicitado. Vuelve a cargarlo.",
-        "Pendiente": "El documento requiere revisión manual de un administrador antes de aprobarse.",
-    }
+    nombre_archivo, estado, comentario, confianza = _simular_revision_ia(archivo)
+    if nombre_archivo is None:
+        nombre_archivo = doc["nombre_archivo"] or f"documento_{doc_id}.pdf"
+        estado, comentario = "Pendiente", "El documento requiere revisión manual de un administrador antes de aprobarse."
     conn.execute("""UPDATE documentos SET nombre_archivo=?, estado=?, comentario_ia=?, confianza_ia=?, fecha_carga=?
                      WHERE id=?""",
-                 (nombre_archivo, resultado, comentarios[resultado],
-                  random.randint(60, 99), date.today().isoformat(), doc_id))
+                 (nombre_archivo, estado, comentario, confianza, date.today().isoformat(), doc_id))
     conn.commit()
     jugador_id = doc["jugador_id"]
     conn.close()

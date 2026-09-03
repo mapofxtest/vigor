@@ -158,6 +158,7 @@ EPS_LIST = ["Sura", "Sanitas", "Compensar", "Nueva EPS", "Famisanar", "Salud Tot
 DOCUMENTOS_REQUERIDOS = [
     {
         "tipo": "Registro Civil de Nacimiento",
+        "campo": "registro_civil",
         "resumen": (
             "Solo se acepta el documento físico ORIGINAL, expedido en el papel de "
             "seguridad de la Registraduría Nacional del Estado Civil. No se aceptan "
@@ -185,6 +186,7 @@ DOCUMENTOS_REQUERIDOS = [
     },
     {
         "tipo": "Tarjeta de Identidad o Pasaporte vigente",
+        "campo": "identidad",
         "resumen": (
             "Documento físico original y VIGENTE (no vencido). No se aceptan fotos del "
             "documento ni contraseñas o comprobantes de trámite en curso."
@@ -196,7 +198,7 @@ DOCUMENTOS_REQUERIDOS = [
         "requisitos": [
             "Estar vigente (no vencido) a la fecha de inicio del torneo.",
             "Ser el documento físico original: Tarjeta de Identidad para jugadores "
-            "colombianos, o Pasaporte vigente para jugadores extranjeros.",
+            "colombianos, o Pasaporte vigente para jugadores nacionales o extranjeros.",
             "No se aceptan fotografías del documento tomadas con celular como "
             "reemplazo del físico, ni \"contraseñas\" o comprobantes de trámite que "
             "expide la Registraduría mientras se entrega el documento definitivo.",
@@ -206,6 +208,7 @@ DOCUMENTOS_REQUERIDOS = [
     },
     {
         "tipo": "Certificado de afiliación a EPS vigente",
+        "campo": "eps",
         "resumen": (
             "Certificado de afiliación VIGENTE expedido por la EPS, que confirme que "
             "el jugador está activo en el sistema de salud a la fecha del torneo."
@@ -343,6 +346,41 @@ def build_database():
                     (jugador_id, tipo, f"{tipo.split(' ')[0].lower()}_{jugador_id}.pdf", estado, comentario,
                      random.randint(70, 99) if estado != "Pendiente" else None,
                      (date.today() - timedelta(days=random.randint(0, 20))).isoformat()))
+
+    # Jugador demo fijo para presentaciones en vivo: siempre tiene un documento
+    # aprobado, uno rechazado y uno pendiente, para no depender del azar al presentar.
+    demo_club_id = club_ids[0]
+    cur.execute("INSERT INTO padres (nombre, telefono, email, parentesco) VALUES (?,?,?,?)",
+                ("Acudiente Demo", "3000000000", "acudiente.demo@vigor-demo.co", "Padre"))
+    demo_padre_id = cur.lastrowid
+
+    cur.execute("""INSERT INTO jugadores
+        (club_id, padre_id, nombre, fecha_nacimiento, categoria, posicion, numero_camiseta,
+         talla_uniforme, eps, tipo_sangre, alergias, contacto_emergencia, telefono_emergencia,
+         observaciones_medicas)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+        (demo_club_id, demo_padre_id, "Jugador Demo (no borrar)", _fecha_nacimiento("Sub-11"),
+         "Sub-11", "Delantero", 99, "10", "Sura", "O+", "Ninguna", "Acudiente Demo",
+         "3000000000", "Ninguna"))
+    demo_jugador_id = cur.lastrowid
+
+    demo_estados = {
+        "registro_civil": ("Aprobado",
+            "La IA confirma que el documento corresponde al tipo solicitado y los datos "
+            "coinciden con el registro del jugador."),
+        "identidad": ("Rechazado",
+            "La IA no pudo verificar el documento: parece ser una copia o descarga "
+            "digital en vez del original físico. Vuelve a cargarlo."),
+        "eps": ("Pendiente",
+            "El documento requiere revisión manual de un administrador antes de aprobarse."),
+    }
+    for d in DOCUMENTOS_REQUERIDOS:
+        estado, comentario = demo_estados[d["campo"]]
+        cur.execute("""INSERT INTO documentos
+            (jugador_id, tipo, nombre_archivo, estado, comentario_ia, confianza_ia, fecha_carga)
+            VALUES (?,?,?,?,?,?,?)""",
+            (demo_jugador_id, d["tipo"], f"{d['campo']}_demo.pdf", estado, comentario,
+             92 if estado != "Pendiente" else None, date.today().isoformat()))
 
     # Partidos (round-robin simplificado por jornadas)
     estadio_ids = [row[0] for row in cur.execute("SELECT id FROM estadios").fetchall()]
