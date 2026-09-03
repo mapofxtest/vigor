@@ -186,16 +186,33 @@ def admin_club_detail(club_id):
 @app.route("/admin/documentos")
 def admin_documentos():
     conn = db.get_connection()
-    estado_filtro = request.args.get("estado", "Pendiente")
-    docs = q(conn, """SELECT d.*, j.nombre jugador_nombre, cl.nombre club_nombre
-                       FROM documentos d
-                       JOIN jugadores j ON j.id = d.jugador_id
-                       JOIN clubes cl ON cl.id = j.club_id
-                       WHERE d.estado=?
-                       ORDER BY d.fecha_carga DESC LIMIT 60""", (estado_filtro,))
+    clubes = q(conn, "SELECT id, nombre FROM clubes ORDER BY nombre")
+    club_id = request.args.get("club_id", type=int)
+    mostrar = request.args.get("mostrar", "pendientes")  # "pendientes" o "todos"
+
+    where, params = "", []
+    if club_id:
+        where, params = "WHERE j.club_id = ?", [club_id]
+
+    filas_jugadores = q(conn, f"""SELECT j.*, cl.nombre club_nombre, p.nombre padre_nombre
+                                   FROM jugadores j
+                                   JOIN clubes cl ON cl.id = j.club_id
+                                   LEFT JOIN padres p ON p.id = j.padre_id
+                                   {where}
+                                   ORDER BY j.nombre""", params)
+
+    jugadores = []
+    for j in filas_jugadores:
+        docs = q(conn, "SELECT * FROM documentos WHERE jugador_id=? ORDER BY id", (j["id"],))
+        no_aprobados = [d for d in docs if d["estado"] != "Aprobado"]
+        if mostrar == "pendientes" and not no_aprobados:
+            continue
+        jugadores.append({"jugador": j, "documentos": docs, "no_aprobados": no_aprobados})
+
     resumen = q(conn, "SELECT estado, COUNT(*) c FROM documentos GROUP BY estado")
     conn.close()
-    return render_template("documentos.html", docs=docs, resumen=resumen, estado_filtro=estado_filtro)
+    return render_template("documentos.html", clubes=clubes, club_id=club_id, mostrar=mostrar,
+                            jugadores=jugadores, resumen=resumen)
 
 
 @app.route("/admin/documentos/<int:doc_id>/revisar", methods=["POST"])
@@ -212,29 +229,6 @@ def revisar_documento(doc_id):
     conn.close()
     flash("Documento actualizado.", "success")
     return redirect(request.referrer or url_for("admin_documentos"))
-
-
-@app.route("/admin/documentos-por-club")
-def admin_documentos_por_club():
-    conn = db.get_connection()
-    clubes = q(conn, "SELECT id, nombre FROM clubes ORDER BY nombre")
-    club_id = request.args.get("club_id", type=int)
-    if not club_id and clubes:
-        club_id = clubes[0]["id"]
-
-    jugadores = []
-    club_actual = None
-    if club_id:
-        club_actual = one(conn, "SELECT * FROM clubes WHERE id=?", (club_id,))
-        filas_jugadores = q(conn, """SELECT j.*, p.nombre padre_nombre FROM jugadores j
-                                      LEFT JOIN padres p ON p.id = j.padre_id
-                                      WHERE j.club_id=? ORDER BY j.nombre""", (club_id,))
-        for j in filas_jugadores:
-            docs = q(conn, "SELECT * FROM documentos WHERE jugador_id=? ORDER BY id", (j["id"],))
-            jugadores.append({"jugador": j, "documentos": docs})
-    conn.close()
-    return render_template("admin_documentos_por_club.html", clubes=clubes, club_id=club_id,
-                            club_actual=club_actual, jugadores=jugadores)
 
 
 @app.route("/uploads/<path:filename>")

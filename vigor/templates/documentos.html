@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% set active = 'documentos' %}
-{% block title %}Documentos · Vigor{% endblock %}
+{% block title %}Documentos a aprobar · Vigor{% endblock %}
 {% block content %}
 
 <div class="section-head">
   <div>
-    <h1>Revisión de documentos</h1>
-    <p class="muted">Cada documento cargado por un acudiente pasa por una revisión automática antes de llegar aquí.</p>
+    <h1>Documentos a aprobar</h1>
+    <p class="muted">Cada jugador queda aquí con sus 3 documentos hasta que los tres estén aprobados.</p>
   </div>
 </div>
 
@@ -16,31 +16,93 @@
   {% endfor %}
 </div>
 
-<div class="doc-tabs">
-  <a href="{{ url_for('admin_documentos', estado=estado_filtro) }}" class="active">Por estado</a>
-  <a href="{{ url_for('admin_documentos_por_club') }}">Por club</a>
+<div class="two-col" style="grid-template-columns: 1fr 1fr; max-width:640px; align-items:end; margin-top:10px">
+  <form method="get" class="field" style="margin-bottom:0">
+    <label for="club_id">Club</label>
+    <select id="club_id" name="club_id" onchange="this.form.submit()">
+      <option value="">Todos los clubes</option>
+      {% for c in clubes %}
+        <option value="{{ c.id }}" {{ 'selected' if c.id == club_id }}>{{ c.nombre }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  <div class="doc-tabs" style="margin-bottom:0">
+    <a href="{{ url_for('admin_documentos', club_id=club_id, mostrar='pendientes') }}" class="{{ 'active' if mostrar=='pendientes' }}">Solo pendientes</a>
+    <a href="{{ url_for('admin_documentos', club_id=club_id, mostrar='todos') }}" class="{{ 'active' if mostrar=='todos' }}">Ver todos</a>
+  </div>
 </div>
 
-<div class="doc-tabs">
-  <a href="{{ url_for('admin_documentos', estado='Pendiente') }}" class="{{ 'active' if estado_filtro=='Pendiente' }}">Pendientes</a>
-  <a href="{{ url_for('admin_documentos', estado='Rechazado') }}" class="{{ 'active' if estado_filtro=='Rechazado' }}">Rechazados</a>
-  <a href="{{ url_for('admin_documentos', estado='Aprobado') }}" class="{{ 'active' if estado_filtro=='Aprobado' }}">Aprobados</a>
-</div>
+{% if not jugadores %}
+  <div class="empty" style="margin-top:24px">
+    {% if mostrar == 'pendientes' %}
+      🎉 No hay jugadores con documentos pendientes de revisión{{ ' en este club' if club_id else '' }}.
+    {% else %}
+      Todavía no hay jugadores inscritos{{ ' en este club' if club_id else '' }}.
+    {% endif %}
+  </div>
+{% endif %}
 
-{% if docs %}
-<div class="table-scroll"><table>
-  <thead>
-    <tr><th>Jugador</th><th>Club</th><th>Tipo de documento</th><th>Comentario de la IA</th><th>Cargado</th><th></th></tr>
-  </thead>
-  <tbody>
-    {% for d in docs %}
-    <tr {% if 'Jugador Demo' in d.jugador_nombre %}class="highlight"{% endif %}>
-      <td>{{ d.jugador_nombre }}{% if 'Jugador Demo' in d.jugador_nombre %} <span class="tag" style="border:none;padding:0;font-size:0.78rem">★ demo</span>{% endif %}</td>
-      <td>{{ d.club_nombre }}</td>
-      <td>{{ d.tipo }}</td>
-      <td class="muted" style="max-width:280px">{{ d.comentario_ia }}{% if d.confianza_ia %} · {{ d.confianza_ia }}% de confianza{% endif %}</td>
-      <td>{{ d.fecha_carga }}</td>
-      <td style="white-space:nowrap">
+{% for item in jugadores %}
+{% set j = item.jugador %}
+<div class="jornada-block">
+  <div class="section-head" style="margin-bottom:10px;align-items:flex-start">
+    <div>
+      <h3>{{ j.nombre }} {% if 'Jugador Demo' in j.nombre %}<span class="tag" style="border:none;padding:0;font-size:0.78rem">★ demo</span>{% endif %}</h3>
+      <p class="muted" style="font-size:0.85rem;margin:2px 0 0">
+        {{ j.club_nombre }} · {{ j.categoria }} · Acudiente: {{ j.padre_nombre }}
+      </p>
+    </div>
+    <span class="muted" style="font-size:0.85rem;white-space:nowrap">
+      {{ item.documentos|length - item.no_aprobados|length }} / {{ item.documentos|length }} aprobados
+    </span>
+  </div>
+
+  {% if item.no_aprobados %}
+  <div class="tile" style="border:1px solid var(--gold);background:#FBF3E1;margin-bottom:16px">
+    <p style="margin:0;font-weight:600;color:#8A6A1E;font-size:0.92rem">
+      La IA analizó los {{ item.documentos|length }} documentos de {{ j.nombre }} y encontró que
+      {{ item.no_aprobados|length }} de {{ item.documentos|length }} no {{ 'pasó' if item.no_aprobados|length == 1 else 'pasaron' }} el filtro:
+    </p>
+    <ul style="margin:8px 0 0;padding-left:20px;font-size:0.86rem;color:#6b5216">
+      {% for d in item.no_aprobados %}
+        <li style="margin-bottom:4px">
+          <strong>{{ d.tipo }}</strong> ({{ d.estado }}) — {{ d.comentario_ia }}
+          {% if d.confianza_ia %} · confianza IA: {{ d.confianza_ia }}%{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% else %}
+  <div class="tile" style="border:1px solid var(--green);background:var(--green-tint);margin-bottom:16px">
+    <p style="margin:0;font-weight:600;color:var(--green-dark);font-size:0.92rem">
+      La IA analizó los {{ item.documentos|length }} documentos de {{ j.nombre }}: los {{ item.documentos|length }} fueron aprobados.
+    </p>
+  </div>
+  {% endif %}
+
+  <div class="tile-grid">
+    {% for d in item.documentos %}
+    <div class="tile">
+      <h3 style="font-size:0.98rem">{{ d.tipo }}</h3>
+      <p class="status {{ d.estado|lower }}" style="margin:10px 0">
+        {% if d.estado == 'Aprobado' %}<svg class="icon"><use href="#icon-check"/></svg>
+        {% elif d.estado == 'Rechazado' %}<svg class="icon"><use href="#icon-x"/></svg>
+        {% else %}<svg class="icon"><use href="#icon-clock"/></svg>{% endif %}
+        {{ d.estado }}
+      </p>
+
+      {% if d.ruta_archivo %}
+        <a href="{{ url_for('ver_documento_archivo', filename=d.ruta_archivo) }}" target="_blank"
+           class="link" style="display:inline-block;font-size:0.85rem;text-decoration:none;margin-bottom:10px">
+          <svg class="icon"><use href="#icon-doc"/></svg> Ver documento cargado
+        </a>
+      {% else %}
+        <p class="muted" style="font-size:0.82rem">Sin archivo cargado todavía.</p>
+      {% endif %}
+
+      <p class="muted" style="font-size:0.8rem">{{ d.comentario_ia }}{% if d.confianza_ia %} · {{ d.confianza_ia }}% de confianza{% endif %}</p>
+
+      <div style="margin-top:12px;white-space:nowrap">
         {% if d.estado != 'Aprobado' %}
         <form method="post" action="{{ url_for('revisar_documento', doc_id=d.id) }}" style="display:inline">
           <input type="hidden" name="estado" value="Aprobado">
@@ -53,13 +115,12 @@
           <button class="btn small danger" type="submit">Rechazar</button>
         </form>
         {% endif %}
-      </td>
-    </tr>
+      </div>
+    </div>
     {% endfor %}
-  </tbody>
-</table></div>
-{% else %}
-<div class="empty">No hay documentos en estado "{{ estado_filtro }}".</div>
-{% endif %}
+  </div>
+</div>
+<div class="pitch-divider"></div>
+{% endfor %}
 
 {% endblock %}
