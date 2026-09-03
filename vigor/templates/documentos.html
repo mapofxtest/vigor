@@ -16,21 +16,36 @@
   {% endfor %}
 </div>
 
-<div class="two-col" style="grid-template-columns: 1fr 1fr; max-width:640px; align-items:end; margin-top:10px">
+<div class="two-col" style="grid-template-columns: 1fr 1fr 1fr; max-width:820px; align-items:end; margin-top:10px">
   <form method="get" class="field" style="margin-bottom:0">
     <label for="club_id">Club</label>
     <select id="club_id" name="club_id" onchange="this.form.submit()">
+      <input type="hidden" name="q" value="{{ busqueda }}">
+      <input type="hidden" name="mostrar" value="{{ mostrar }}">
       <option value="">Todos los clubes</option>
       {% for c in clubes %}
         <option value="{{ c.id }}" {{ 'selected' if c.id == club_id }}>{{ c.nombre }}</option>
       {% endfor %}
     </select>
   </form>
+  <form method="get" class="field" style="margin-bottom:0">
+    <label for="q">Buscar jugador</label>
+    <input type="hidden" name="club_id" value="{{ club_id or '' }}">
+    <input type="hidden" name="mostrar" value="{{ mostrar }}">
+    <input type="text" id="q" name="q" value="{{ busqueda }}" placeholder="Nombre del jugador...">
+  </form>
   <div class="doc-tabs" style="margin-bottom:0">
-    <a href="{{ url_for('admin_documentos', club_id=club_id, mostrar='pendientes') }}" class="{{ 'active' if mostrar=='pendientes' }}">Solo pendientes</a>
-    <a href="{{ url_for('admin_documentos', club_id=club_id, mostrar='todos') }}" class="{{ 'active' if mostrar=='todos' }}">Ver todos</a>
+    <a href="{{ url_for('admin_documentos', club_id=club_id, q=busqueda, mostrar='pendientes') }}" class="{{ 'active' if mostrar=='pendientes' }}">Solo pendientes</a>
+    <a href="{{ url_for('admin_documentos', club_id=club_id, q=busqueda, mostrar='todos') }}" class="{{ 'active' if mostrar=='todos' }}">Ver todos</a>
   </div>
 </div>
+
+{% if busqueda %}
+<p class="muted" style="font-size:0.88rem;margin-top:14px">
+  Mostrando resultados para "<strong>{{ busqueda }}</strong>"{{ ' en ' + clubes|selectattr('id','equalto',club_id)|map(attribute='nombre')|first if club_id else '' }}.
+  <a href="{{ url_for('admin_documentos', club_id=club_id, mostrar=mostrar) }}">Quitar búsqueda</a>
+</p>
+{% endif %}
 
 {% if not jugadores %}
   <div class="empty" style="margin-top:24px">

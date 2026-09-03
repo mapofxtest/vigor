@@ -189,10 +189,16 @@ def admin_documentos():
     clubes = q(conn, "SELECT id, nombre FROM clubes ORDER BY nombre")
     club_id = request.args.get("club_id", type=int)
     mostrar = request.args.get("mostrar", "pendientes")  # "pendientes" o "todos"
+    busqueda = request.args.get("q", "").strip()
 
-    where, params = "", []
+    filtros, params = [], []
     if club_id:
-        where, params = "WHERE j.club_id = ?", [club_id]
+        filtros.append("j.club_id = ?")
+        params.append(club_id)
+    if busqueda:
+        filtros.append("j.nombre LIKE ?")
+        params.append(f"%{busqueda}%")
+    where = ("WHERE " + " AND ".join(filtros)) if filtros else ""
 
     filas_jugadores = q(conn, f"""SELECT j.*, cl.nombre club_nombre, p.nombre padre_nombre
                                    FROM jugadores j
@@ -212,7 +218,7 @@ def admin_documentos():
     resumen = q(conn, "SELECT estado, COUNT(*) c FROM documentos GROUP BY estado")
     conn.close()
     return render_template("documentos.html", clubes=clubes, club_id=club_id, mostrar=mostrar,
-                            jugadores=jugadores, resumen=resumen)
+                            jugadores=jugadores, resumen=resumen, busqueda=busqueda)
 
 
 @app.route("/admin/documentos/<int:doc_id>/revisar", methods=["POST"])
