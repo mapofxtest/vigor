@@ -155,7 +155,80 @@ ROLES_STAFF = ["Director Técnico", "Preparador Físico", "Asistente Técnico", 
 CATEGORIAS = ["Sub-9", "Sub-11", "Sub-13", "Sub-15"]
 POSICIONES = ["Portero", "Defensa Central", "Lateral", "Volante", "Delantero", "Extremo"]
 EPS_LIST = ["Sura", "Sanitas", "Compensar", "Nueva EPS", "Famisanar", "Salud Total"]
-TIPOS_DOC = ["Registro civil / Tarjeta de identidad", "Autorización de padres", "Carné EPS o afiliación en salud", "Certificado médico deportivo"]
+DOCUMENTOS_REQUERIDOS = [
+    {
+        "tipo": "Registro Civil de Nacimiento",
+        "resumen": (
+            "Solo se acepta el documento físico ORIGINAL, expedido en el papel de "
+            "seguridad de la Registraduría Nacional del Estado Civil. No se aceptan "
+            "fotocopias ni el certificado descargado o impreso desde la página o la "
+            "app de la Registraduría."
+        ),
+        "detalle": (
+            "El Registro Civil de Nacimiento es el documento que certifica de forma "
+            "oficial la identidad y la edad del jugador, y es la base para confirmar "
+            "que compite en la categoría que le corresponde. Para que la organización "
+            "pueda validarlo, debe cumplir con todas estas condiciones:"
+        ),
+        "requisitos": [
+            "Ser el ejemplar físico original, impreso en el papel de seguridad propio "
+            "de la Registraduría (con marca de agua, sellos y firma del funcionario "
+            "que lo expidió).",
+            "No se aceptan fotocopias, ni escaneos, ni fotografías del documento como "
+            "sustituto del original.",
+            "No se acepta el certificado digital descargado o impreso desde el portal "
+            "o la app de la Registraduría: ese documento tiene un propósito distinto y "
+            "no reemplaza el original en trámites de identificación presencial.",
+            "El documento se coteja físicamente contra el jugador en el momento de la "
+            "acreditación del equipo, antes de su primer partido.",
+        ],
+    },
+    {
+        "tipo": "Tarjeta de Identidad o Pasaporte vigente",
+        "resumen": (
+            "Documento físico original y VIGENTE (no vencido). No se aceptan fotos del "
+            "documento ni contraseñas o comprobantes de trámite en curso."
+        ),
+        "detalle": (
+            "Este documento permite confirmar que la fotografía y los datos "
+            "corresponden al jugador inscrito. Debe cumplir con:"
+        ),
+        "requisitos": [
+            "Estar vigente (no vencido) a la fecha de inicio del torneo.",
+            "Ser el documento físico original: Tarjeta de Identidad para jugadores "
+            "colombianos, o Pasaporte vigente para jugadores extranjeros.",
+            "No se aceptan fotografías del documento tomadas con celular como "
+            "reemplazo del físico, ni \"contraseñas\" o comprobantes de trámite que "
+            "expide la Registraduría mientras se entrega el documento definitivo.",
+            "Se verifica contra el jugador el día de cada partido junto con el carné "
+            "del torneo.",
+        ],
+    },
+    {
+        "tipo": "Certificado de afiliación a EPS vigente",
+        "resumen": (
+            "Certificado de afiliación VIGENTE expedido por la EPS, que confirme que "
+            "el jugador está activo en el sistema de salud a la fecha del torneo."
+        ),
+        "detalle": (
+            "Este certificado protege al jugador en caso de una lesión durante el "
+            "torneo, ya que confirma su cobertura médica vigente. Debe cumplir con:"
+        ),
+        "requisitos": [
+            "Estar vigente a la fecha de inicio del torneo (no basta con el carné "
+            "físico de la EPS, que no indica el estado actual de la afiliación).",
+            "Puede presentarse impreso o como el PDF oficial que expide la propia EPS, "
+            "siempre que incluya el código o sello de verificación de esa entidad.",
+            "Debe corresponder exactamente al nombre completo del jugador inscrito.",
+        ],
+    },
+]
+
+TIPOS_DOC = [d["tipo"] for d in DOCUMENTOS_REQUERIDOS]
+
+
+def get_doc_info(tipo):
+    return next((d for d in DOCUMENTOS_REQUERIDOS if d["tipo"] == tipo), None)
 
 random.seed(42)
 

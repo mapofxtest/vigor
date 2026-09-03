@@ -29,4 +29,23 @@
 </div>
 {% endif %}
 
+<div class="section" style="max-width:640px">
+  <div class="section-head"><h3>Antes de empezar, ten a la mano estos documentos</h3></div>
+  <p class="muted" style="font-size:0.9rem">
+    Los tres deben ser físicos, vigentes y originales. Solo así se puede validar la
+    identidad del jugador y evitar fraudes o suplantaciones.
+  </p>
+  <div class="tile-grid" style="margin-top:16px">
+    {% for d in documentos_requeridos %}
+    <div class="tile">
+      <h3 style="font-size:1rem">{{ d.tipo }}</h3>
+      <p class="meta" style="margin-top:8px">{{ d.resumen }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  <a href="{{ url_for('requisitos_documentos') }}" class="link" style="display:inline-block;margin-top:14px;text-decoration:none;font-weight:600">
+    Ver el detalle completo y por qué se exigen así →
+  </a>
+</div>
+
 {% endblock %}

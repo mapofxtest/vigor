@@ -232,7 +232,13 @@ def inscripcion():
         if not club:
             error = "No encontramos ningún club con ese código. Verifícalo con el director técnico."
     conn.close()
-    return render_template("inscripcion.html", club=club, error=error)
+    return render_template("inscripcion.html", club=club, error=error,
+                            documentos_requeridos=db.DOCUMENTOS_REQUERIDOS)
+
+
+@app.route("/inscripcion/requisitos-documentos")
+def requisitos_documentos():
+    return render_template("requisitos_documentos.html", documentos=db.DOCUMENTOS_REQUERIDOS)
 
 
 @app.route("/inscripcion/<codigo>/formulario", methods=["GET", "POST"])
@@ -282,7 +288,9 @@ def inscripcion_confirmacion(jugador_id):
                             JOIN clubes cl ON cl.id = j.club_id WHERE j.id=?""", (jugador_id,))
     documentos = q(conn, "SELECT * FROM documentos WHERE jugador_id=?", (jugador_id,))
     conn.close()
-    return render_template("inscripcion_confirmacion.html", jugador=jugador, documentos=documentos)
+    documentos_info = {d["tipo"]: db.get_doc_info(d["tipo"]) for d in documentos}
+    return render_template("inscripcion_confirmacion.html", jugador=jugador, documentos=documentos,
+                            documentos_info=documentos_info)
 
 
 @app.route("/inscripcion/documentos/<int:doc_id>/subir", methods=["POST"])

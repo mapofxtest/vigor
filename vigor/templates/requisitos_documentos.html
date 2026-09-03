@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% set active = 'inscripcion' %}
+{% block title %}Requisitos de documentos · Vigor{% endblock %}
+{% block content %}
+
+<div class="section-head">
+  <div>
+    <h1>Por qué pedimos documentos originales</h1>
+    <p class="muted" style="max-width:680px;margin-top:8px">
+      La organización de la Copa asume una responsabilidad legal sobre la identidad y la
+      edad de cada jugador inscrito: de eso depende que compita en la categoría correcta,
+      que esté protegido en caso de una lesión, y que ningún equipo pueda hacer trampa
+      alineando a un jugador que no es quien dice ser. Por eso los tres documentos de
+      inscripción deben ser físicos, vigentes y auténticos — no se aceptan copias,
+      descargas digitales ni comprobantes provisionales.
+    </p>
+  </div>
+</div>
+
+<div class="tile" style="border:1px solid var(--red);background:var(--red-tint);max-width:760px;margin-top:8px">
+  <p style="color:var(--red);margin:0;font-weight:600">Esto existe para evitar fraudes y suplantaciones.</p>
+  <p style="color:var(--red);margin:8px 0 0;font-size:0.92rem">
+    Un jugador jugando bajo una identidad o una edad que no es la suya pone en riesgo la
+    integridad deportiva del torneo y la seguridad de los demás niños en la cancha. Los
+    documentos digitales, las fotocopias o las contraseñas de trámite son fáciles de
+    editar o de usar para alguien distinto al jugador — el documento físico original, en
+    cambio, se puede cotejar presencialmente contra el niño o niña el día del partido.
+  </p>
+</div>
+
+<div class="section">
+  {% for d in documentos %}
+  <div class="jornada-block" style="max-width:760px">
+    <h3>{{ loop.index }}. {{ d.tipo }}</h3>
+    <p style="margin-top:8px">{{ d.detalle }}</p>
+    <ul style="margin-top:4px;padding-left:20px;color:var(--ink-soft)">
+      {% for r in d.requisitos %}
+        <li style="margin-bottom:6px">{{ r }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  <div class="pitch-divider" style="max-width:760px;margin:24px 0"></div>
+  {% endfor %}
+</div>
+
+<div class="tile" style="border:1px solid var(--line);max-width:760px">
+  <h3>¿Y si un documento no cumple estas condiciones?</h3>
+  <p style="margin-top:8px;font-size:0.92rem">
+    El sistema o un administrador del torneo lo marcará como "Rechazado" y te pedirá
+    volver a cargarlo. Un jugador no queda habilitado para jugar su primer partido hasta
+    que sus tres documentos estén en estado "Aprobado". Si tienes dudas sobre un caso
+    particular (por ejemplo, un pasaporte de otro país o un trámite de registro civil en
+    curso), contacta al director técnico de tu club para que lo consulte con la
+    organización antes de la fecha límite de inscripciones.
+  </p>
+</div>
+
+<a href="{{ url_for('inscripcion') }}" class="btn secondary" style="margin-top:32px">← Volver a inscripción</a>
+
+{% endblock %}

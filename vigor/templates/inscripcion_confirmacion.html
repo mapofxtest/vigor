@@ -10,8 +10,16 @@
   </div>
 </div>
 
+<div class="tile" style="border:1px solid var(--line);max-width:760px;margin-top:8px">
+  <p style="font-size:0.9rem;margin:0">
+    Solo se aceptan documentos físicos originales y vigentes — no copias, fotocopias ni
+    descargas digitales. <a href="{{ url_for('requisitos_documentos') }}">Ver por qué y el detalle completo →</a>
+  </p>
+</div>
+
 <div class="tile-grid section">
   {% for d in documentos %}
+  {% set info = documentos_info.get(d.tipo) %}
   <div class="tile">
     <h3 style="font-size:1.05rem">{{ d.tipo }}</h3>
     <p class="status {{ d.estado|lower }}" style="margin:10px 0">
@@ -20,7 +28,10 @@
       {% else %}<svg class="icon"><use href="#icon-clock"/></svg>{% endif %}
       {{ d.estado }}
     </p>
-    <p class="muted" style="font-size:0.85rem">{{ d.comentario_ia }}</p>
+    {% if info %}
+    <p class="muted" style="font-size:0.82rem;border-left:2px solid var(--line);padding-left:10px">{{ info.resumen }}</p>
+    {% endif %}
+    <p class="muted" style="font-size:0.85rem;margin-top:10px">{{ d.comentario_ia }}</p>
     <form method="post" action="{{ url_for('subir_documento', doc_id=d.id) }}" enctype="multipart/form-data" style="margin-top:14px">
       <input type="file" name="archivo" accept="image/*,application/pdf" style="font-size:0.85rem">
       <button class="btn small secondary" type="submit" style="margin-top:10px">
