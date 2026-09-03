@@ -4,7 +4,7 @@ import random
 import db
 
 app = Flask(__name__)
-app.secret_key = "vigo-demo-secret"
+app.secret_key = "vigor-demo-secret"
 
 
 def q(conn, sql, params=()):

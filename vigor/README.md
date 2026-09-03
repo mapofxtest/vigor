@@ -1,6 +1,6 @@
-# Vigo — Prototipo de gestión de torneos deportivos
+# Vigor — Prototipo de gestión de torneos deportivos
 
-Prototipo navegable para Vigo: creación de torneos, inscripción de clubes/staff/jugadores
+Prototipo navegable para Vigor: creación de torneos, inscripción de clubes/staff/jugadores
 con código por club, carga de documentos con revisión simulada por IA, y un panel de
 seguimiento gerencial del torneo. Datos 100% ficticios (municipios de la Sabana de
 Occidente de Cundinamarca: Facatativá, Madrid, Mosquera, Funza, Bojacá, Zipacón, El Rosal
@@ -17,11 +17,11 @@ python app.py
 
 Abre http://127.0.0.1:5050 en el navegador.
 
-La primera vez que corres la app se crea automáticamente `vigo.db` (SQLite) con datos
+La primera vez que corres la app se crea automáticamente `vigor.db` (SQLite) con datos
 demo: 1 torneo, 8 ciudades, 8 estadios, 12 clubes, ~34 personas de staff, ~148 jugadores
 con sus acudientes, documentos en distintos estados y 36 partidos con goles y tarjetas.
 
-Para regenerar los datos demo desde cero (borra `vigo.db` y la vuelve a crear):
+Para regenerar los datos demo desde cero (borra `vigor.db` y la vuelve a crear):
 
 ```bash
 python db.py
@@ -58,12 +58,12 @@ soporta Flask sin configuración especial. El proyecto ya trae todo lo necesario
    - **Start command:** `gunicorn app:app --bind 0.0.0.0:$PORT`
    - **Plan:** Free
 5. Click en "Create Web Service". En 2–3 minutos te da una URL pública tipo
-   `https://vigo-prototipo.onrender.com` — esa es la página de inicio (`index`) del proyecto.
+   `https://vigor-prototipo.onrender.com` — esa es la página de inicio (`index`) del proyecto.
 
 **Dos límites del plan gratuito a tener en cuenta (normales para un dummy):**
 - El servicio "se duerme" tras ~15 min sin tráfico; la primera visita después tarda
   cerca de un minuto en despertar.
-- El disco no es permanente entre reinicios: si el servicio se reinicia, `vigo.db` se
+- El disco no es permanente entre reinicios: si el servicio se reinicia, `vigor.db` se
   vuelve a generar desde cero con los datos demo (perderías inscripciones nuevas hechas
   a mano). Para un dummy está bien; si luego quieres persistencia real, Render también
   ofrece una base de datos PostgreSQL gratuita por 90 días que podemos conectar.

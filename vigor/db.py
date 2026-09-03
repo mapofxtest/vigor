@@ -3,7 +3,7 @@ import os
 import random
 from datetime import date, timedelta
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "vigo.db")
+DB_PATH = os.path.join(os.path.dirname(__file__), "vigor.db")
 
 SCHEMA = """
 CREATE TABLE ciudades (
@@ -221,7 +221,7 @@ def build_database():
             cur.execute(
                 "INSERT INTO staff (club_id, nombre, rol, telefono, email, licencia) VALUES (?,?,?,?,?,?)",
                 (club_id, nombre, rol, f"3{random.randint(10,29)}{random.randint(1000000,9999999)}",
-                 nombre.lower().replace(' ', '.') + "@vigo-demo.co",
+                 nombre.lower().replace(' ', '.') + "@vigor-demo.co",
                  f"LIC-{random.randint(1000,9999)}" if rol == "Director Técnico" else None),
             )
 
