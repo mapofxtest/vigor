@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% set active = 'inscripcion' %}
+{% block title %}Consultar estado · Vigor{% endblock %}
+{% block content %}
+
+<div class="hero" style="padding-top:24px">
+  <h1>Consulta el estado de tu inscripción</h1>
+  <p style="max-width:480px;margin-top:12px">
+    Si ya inscribiste a tu hijo o hija, ingresa el código del club y su nombre para ver el
+    estado de aprobación de cada documento y la observación de la revisión.
+  </p>
+</div>
+
+<form method="post" class="form-card">
+  {% if error %}<div class="flash" style="border-color:var(--red);background:var(--red-tint);color:var(--red)">{{ error }}</div>{% endif %}
+  <div class="field">
+    <label for="codigo">Código del club</label>
+    <input id="codigo" name="codigo" required placeholder="Ej: FAC-100" value="{{ codigo }}" style="text-transform:uppercase">
+  </div>
+  <div class="field">
+    <label for="nombre">Nombre del jugador</label>
+    <input id="nombre" name="nombre" required placeholder="Nombre completo o parte de él" value="{{ nombre }}">
+  </div>
+  <button class="btn" type="submit">Buscar</button>
+</form>
+
+{% if resultados %}
+<div class="section" style="max-width:640px">
+  <h3>{{ resultados|length }} jugador{{ 'es' if resultados|length != 1 }} encontrado{{ 's' if resultados|length != 1 }}</h3>
+  <div class="tile-grid" style="margin-top:14px">
+    {% for j in resultados %}
+    <div class="tile">
+      <h3 style="font-size:1rem">{{ j.nombre }}</h3>
+      <p class="meta">{{ j.club_nombre }} · {{ j.categoria }}</p>
+      <a class="btn small" style="margin-top:12px" href="{{ url_for('inscripcion_confirmacion', jugador_id=j.id) }}">Ver estado de documentos →</a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<p class="muted" style="margin-top:28px">
+  ¿Todavía no lo has inscrito? <a href="{{ url_for('inscripcion') }}">Empieza la inscripción aquí</a>.
+</p>
+
+{% endblock %}

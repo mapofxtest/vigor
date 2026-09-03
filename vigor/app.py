@@ -301,6 +301,35 @@ def inscripcion():
                             documentos_requeridos=db.DOCUMENTOS_REQUERIDOS)
 
 
+@app.route("/inscripcion/consultar", methods=["GET", "POST"])
+def inscripcion_consultar():
+    conn = db.get_connection()
+    error = None
+    resultados = []
+    buscado = False
+    codigo = request.form.get("codigo", "").strip().upper()
+    nombre = request.form.get("nombre", "").strip()
+
+    if request.method == "POST":
+        buscado = True
+        club = one(conn, "SELECT * FROM clubes WHERE codigo=?", (codigo,))
+        if not club:
+            error = "No encontramos ningún club con ese código. Verifícalo con el director técnico."
+        elif not nombre:
+            error = "Escribe el nombre del jugador para buscarlo."
+        else:
+            resultados = q(conn, """SELECT j.*, cl.nombre club_nombre FROM jugadores j
+                                     JOIN clubes cl ON cl.id = j.club_id
+                                     WHERE j.club_id = ? AND j.nombre LIKE ?
+                                     ORDER BY j.nombre""", (club["id"], f"%{nombre}%"))
+            if not resultados:
+                error = "No encontramos ningún jugador con ese nombre inscrito en este club."
+
+    conn.close()
+    return render_template("inscripcion_consultar.html", error=error, resultados=resultados,
+                            codigo=codigo, nombre=nombre, buscado=buscado)
+
+
 @app.route("/inscripcion/requisitos-documentos")
 def requisitos_documentos():
     return render_template("requisitos_documentos.html", documentos=db.DOCUMENTOS_REQUERIDOS)
