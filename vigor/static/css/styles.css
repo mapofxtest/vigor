@@ -1,0 +1,407 @@
+:root {
+  --bg: #F7F8F3;
+  --surface: #FFFFFF;
+  --ink: #12261C;
+  --ink-soft: #55655C;
+  --line: #D8DED4;
+  --line-strong: #12261C;
+  --green: #2E7D46;
+  --green-dark: #1B4D2C;
+  --green-tint: #E9F2EC;
+  --gold: #C79A34;
+  --red: #B23A2E;
+  --red-tint: #F7ECEA;
+  --gray: #8A968D;
+
+  --font-display: "Barlow Condensed", sans-serif;
+  --font-body: "Inter", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.icon { width: 1.1em; height: 1.1em; vertical-align: -0.15em; }
+
+h1, h2, h3, .display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  margin: 0;
+  color: var(--ink);
+}
+
+h1 { font-size: 2.5rem; line-height: 1.05; }
+h2 { font-size: 1.6rem; margin-bottom: 0.6rem; }
+h3 { font-size: 1.2rem; }
+
+p { color: var(--ink-soft); }
+
+a { color: var(--green-dark); }
+
+.container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+/* ---------------------------------------------------------------- nav -- */
+
+.topbar {
+  border-bottom: 2px solid var(--line-strong);
+  background: var(--surface);
+}
+
+.topbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 28px;
+  max-width: 1120px;
+  margin: 0 auto;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.brand .wordmark {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.8rem;
+  letter-spacing: 0.5px;
+}
+
+.brand .tagline {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+.navlinks {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+
+.navlinks a {
+  text-decoration: none;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  padding-bottom: 4px;
+  border-bottom: 2px solid transparent;
+}
+
+.navlinks a.active, .navlinks a:hover {
+  color: var(--ink);
+  border-bottom-color: var(--green);
+}
+
+/* ------------------------------------------------------------- layout -- */
+
+.page { padding: 40px 0 80px; }
+
+.hero {
+  padding: 64px 0 40px;
+}
+
+.section { margin-top: 48px; }
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.muted { color: var(--ink-soft); font-size: 0.95rem; }
+
+/* --------------------------------------------------------- scoreboard -- */
+
+.scoreboard {
+  display: flex;
+  border-top: 3px solid var(--ink);
+  border-bottom: 3px solid var(--ink);
+  margin-top: 32px;
+}
+
+.scoreboard .stat {
+  flex: 1;
+  padding: 20px 24px;
+  border-left: 1px solid var(--line);
+}
+
+.scoreboard .stat:first-child { border-left: none; }
+
+.scoreboard .stat .num {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  line-height: 1;
+  color: var(--green-dark);
+}
+
+.scoreboard .stat .label {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  margin-top: 6px;
+}
+
+/* -------------------------------------------------------------- cards -- */
+
+.plain-list { display: flex; flex-wrap: wrap; gap: 10px 18px; }
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+  border-bottom: 2px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+}
+
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+
+.tile {
+  background: var(--surface);
+  padding: 20px;
+}
+
+.tile h3 { margin-bottom: 4px; }
+
+.tile .code {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.85rem;
+  color: var(--green-dark);
+  background: var(--green-tint);
+  padding: 2px 8px;
+  display: inline-block;
+  margin: 8px 0;
+}
+
+.tile .meta { color: var(--ink-soft); font-size: 0.88rem; }
+
+.tile a.link { font-size: 0.9rem; text-decoration: none; font-weight: 600; }
+
+/* ------------------------------------------------------------- tables -- */
+
+table { width: 100%; border-collapse: collapse; }
+
+th {
+  text-align: left;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  border-bottom: 2px solid var(--ink);
+  padding: 8px 10px;
+}
+
+td {
+  padding: 10px 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.95rem;
+}
+
+tr.highlight td { background: var(--green-tint); }
+
+td.num, th.num { text-align: center; }
+
+/* -------------------------------------------------------------- forms -- */
+
+.field { margin-bottom: 20px; }
+
+.field label {
+  display: block;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+
+.field input, .field select, .field textarea {
+  width: 100%;
+  border: none;
+  border-bottom: 2px solid var(--line);
+  background: transparent;
+  padding: 8px 2px;
+  font-size: 1rem;
+  font-family: var(--font-body);
+  color: var(--ink);
+}
+
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none;
+  border-bottom-color: var(--green);
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0 24px;
+}
+
+.form-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 28px;
+  max-width: 640px;
+}
+
+/* ------------------------------------------------------------ buttons -- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid var(--ink);
+  background: var(--ink);
+  color: #fff;
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn:hover { background: var(--green-dark); border-color: var(--green-dark); }
+
+.btn.secondary {
+  background: transparent;
+  color: var(--ink);
+}
+
+.btn.secondary:hover { background: var(--green-tint); }
+
+.btn.small { padding: 6px 12px; font-size: 0.85rem; }
+
+.btn.danger { border-color: var(--red); background: var(--red); }
+.btn.danger:hover { background: #8f2e24; }
+
+/* ------------------------------------------------------------- status -- */
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.status.aprobado { color: var(--green-dark); }
+.status.pendiente { color: var(--gold); }
+.status.rechazado { color: var(--red); }
+
+/* -------------------------------------------------------------- flash -- */
+
+.flash {
+  border-left: 4px solid var(--green);
+  background: var(--green-tint);
+  color: var(--green-dark);
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  font-size: 0.95rem;
+}
+
+/* ------------------------------------------------------------- pitch -- */
+
+.pitch-divider {
+  height: 3px;
+  background: repeating-linear-gradient(90deg, var(--ink) 0 24px, transparent 24px 34px);
+  opacity: 0.15;
+  margin: 40px 0;
+}
+
+/* -------------------------------------------------------------- roles -- */
+
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  margin-top: 40px;
+}
+
+.role-card {
+  background: var(--surface);
+  padding: 32px 26px;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.role-card:hover { background: var(--green-tint); }
+
+.role-card .icon-lg { width: 34px; height: 34px; color: var(--green-dark); margin-bottom: 16px; }
+
+.role-card h3 { margin-bottom: 6px; }
+
+.role-card p { font-size: 0.92rem; margin: 0; }
+
+/* --------------------------------------------------------------- misc -- */
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 40px;
+}
+
+@media (max-width: 780px) {
+  .two-col { grid-template-columns: 1fr; }
+  .scoreboard { flex-wrap: wrap; }
+  .scoreboard .stat { flex: 1 1 50%; border-left: none; border-top: 1px solid var(--line); }
+}
+
+.empty {
+  padding: 40px 0;
+  color: var(--ink-soft);
+  border: 1px dashed var(--line);
+  text-align: center;
+}
+
+.doc-tabs { display: flex; gap: 4px; margin-bottom: 24px; }
+.doc-tabs a {
+  padding: 8px 16px;
+  text-decoration: none;
+  color: var(--ink-soft);
+  border-bottom: 2px solid var(--line);
+  font-size: 0.92rem;
+}
+.doc-tabs a.active { color: var(--ink); border-bottom-color: var(--ink); font-weight: 600; }
+
+.jornada-block { margin-bottom: 36px; }
+
+.match-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+  color: var(--ink);
+  gap: 16px;
+}
+
+.match-row .teams { display: flex; align-items: center; gap: 10px; font-size: 1rem; }
+.match-row .score { font-family: var(--font-display); font-size: 1.4rem; }
+.match-row .meta { color: var(--ink-soft); font-size: 0.85rem; text-align: right; min-width: 140px; }

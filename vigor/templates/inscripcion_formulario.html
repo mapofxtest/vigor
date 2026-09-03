@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% set active = 'inscripcion' %}
+{% block title %}Inscripción · {{ club.nombre }}{% endblock %}
+{% block content %}
+
+<div class="section-head">
+  <div>
+    <h1>Inscripción a {{ club.nombre }}</h1>
+    <p class="muted">Completa los datos del jugador y de su acudiente. Todos los campos ayudan al cuerpo médico y técnico durante el torneo.</p>
+  </div>
+</div>
+
+<form method="post" class="form-card" style="max-width:760px">
+
+  <h3>Datos del jugador</h3>
+  <div class="field"><label for="jugador_nombre">Nombre completo</label><input id="jugador_nombre" name="jugador_nombre" required></div>
+  <div class="field-row">
+    <div class="field"><label for="fecha_nacimiento">Fecha de nacimiento</label><input type="date" id="fecha_nacimiento" name="fecha_nacimiento" required></div>
+    <div class="field">
+      <label for="categoria">Categoría</label>
+      <select id="categoria" name="categoria" required>
+        {% for c in categorias %}<option>{{ c }}</option>{% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="field-row">
+    <div class="field">
+      <label for="posicion">Posición</label>
+      <select id="posicion" name="posicion">
+        {% for p in posiciones %}<option>{{ p }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field"><label for="numero_camiseta">Número de camiseta</label><input type="number" min="1" max="99" id="numero_camiseta" name="numero_camiseta"></div>
+    <div class="field">
+      <label for="talla_uniforme">Talla de uniforme</label>
+      <select id="talla_uniforme" name="talla_uniforme"><option>6</option><option>8</option><option>10</option><option>12</option><option>14</option></select>
+    </div>
+  </div>
+
+  <h3 style="margin-top:24px">Información médica</h3>
+  <div class="field-row">
+    <div class="field">
+      <label for="eps">EPS / afiliación en salud</label>
+      <select id="eps" name="eps" required>{% for e in eps_list %}<option>{{ e }}</option>{% endfor %}</select>
+    </div>
+    <div class="field">
+      <label for="tipo_sangre">Tipo de sangre</label>
+      <select id="tipo_sangre" name="tipo_sangre">
+        <option>O+</option><option>O-</option><option>A+</option><option>A-</option><option>B+</option><option>AB+</option>
+      </select>
+    </div>
+  </div>
+  <div class="field"><label for="alergias">Alergias</label><input id="alergias" name="alergias" placeholder="Ninguna"></div>
+  <div class="field"><label for="observaciones_medicas">Observaciones médicas</label><textarea id="observaciones_medicas" name="observaciones_medicas" rows="2" placeholder="Ninguna"></textarea></div>
+
+  <h3 style="margin-top:24px">Datos del acudiente</h3>
+  <div class="field"><label for="padre_nombre">Nombre completo</label><input id="padre_nombre" name="padre_nombre" required></div>
+  <div class="field-row">
+    <div class="field">
+      <label for="parentesco">Parentesco</label>
+      <select id="parentesco" name="parentesco"><option>Madre</option><option>Padre</option><option>Acudiente</option></select>
+    </div>
+    <div class="field"><label for="padre_telefono">Teléfono de contacto</label><input id="padre_telefono" name="padre_telefono" required></div>
+    <div class="field"><label for="padre_email">Correo</label><input type="email" id="padre_email" name="padre_email" required></div>
+  </div>
+
+  <button class="btn" type="submit" style="margin-top:12px">Guardar inscripción</button>
+</form>
+
+{% endblock %}

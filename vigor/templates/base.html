@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Vigo{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+
+{% include 'sprite.html' %}
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a href="{{ url_for('landing') }}" class="brand">
+      <svg class="icon" style="width:26px;height:26px"><use href="#icon-ball"/></svg>
+      <span class="wordmark">Vigo</span>
+      <span class="tagline">Copa Sabana de Occidente 2026</span>
+    </a>
+    <nav class="navlinks">
+      <a href="{{ url_for('admin_dashboard') }}" class="{{ 'active' if active=='dashboard' }}">Panel gerencial</a>
+      <a href="{{ url_for('admin_torneos') }}" class="{{ 'active' if active=='torneos' }}">Torneos</a>
+      <a href="{{ url_for('admin_clubes') }}" class="{{ 'active' if active=='clubes' }}">Clubes</a>
+      <a href="{{ url_for('admin_documentos') }}" class="{{ 'active' if active=='documentos' }}">Documentos</a>
+      <a href="{{ url_for('seguimiento') }}" class="{{ 'active' if active=='seguimiento' }}">Partidos</a>
+      <a href="{{ url_for('inscripcion') }}" class="{{ 'active' if active=='inscripcion' }}">Soy acudiente</a>
+    </nav>
+  </div>
+</div>
+
+<div class="page">
+  <div class="container">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+</body>
+</html>

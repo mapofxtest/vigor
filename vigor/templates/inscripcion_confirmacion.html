@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% set active = 'inscripcion' %}
+{% block title %}Documentos de {{ jugador.nombre }} · Vigo{% endblock %}
+{% block content %}
+
+<div class="section-head">
+  <div>
+    <h1>{{ jugador.nombre }}</h1>
+    <p class="muted">Inscrito en {{ jugador.club_nombre }} · {{ jugador.categoria }}. Ahora sube los documentos del jugador para completar el proceso.</p>
+  </div>
+</div>
+
+<div class="tile-grid section">
+  {% for d in documentos %}
+  <div class="tile">
+    <h3 style="font-size:1.05rem">{{ d.tipo }}</h3>
+    <p class="status {{ d.estado|lower }}" style="margin:10px 0">
+      {% if d.estado == 'Aprobado' %}<svg class="icon"><use href="#icon-check"/></svg>
+      {% elif d.estado == 'Rechazado' %}<svg class="icon"><use href="#icon-x"/></svg>
+      {% else %}<svg class="icon"><use href="#icon-clock"/></svg>{% endif %}
+      {{ d.estado }}
+    </p>
+    <p class="muted" style="font-size:0.85rem">{{ d.comentario_ia }}</p>
+    <form method="post" action="{{ url_for('subir_documento', doc_id=d.id) }}" enctype="multipart/form-data" style="margin-top:14px">
+      <input type="file" name="archivo" accept="image/*,application/pdf" style="font-size:0.85rem">
+      <button class="btn small secondary" type="submit" style="margin-top:10px">
+        <svg class="icon"><use href="#icon-upload"/></svg> {{ 'Volver a subir' if d.estado == 'Rechazado' else 'Subir documento' }}
+      </button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+
+<p class="muted" style="margin-top:28px">
+  Cada documento se revisa automáticamente al subirlo. Si un documento queda "Pendiente" o "Rechazado",
+  el administrador del torneo lo revisará o te pedirá que lo vuelvas a cargar.
+</p>
+
+{% endblock %}

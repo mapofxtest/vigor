@@ -1,0 +1,314 @@
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from datetime import date
+import random
+import db
+
+app = Flask(__name__)
+app.secret_key = "vigo-demo-secret"
+
+
+def q(conn, sql, params=()):
+    return conn.execute(sql, params).fetchall()
+
+
+def one(conn, sql, params=()):
+    return conn.execute(sql, params).fetchone()
+
+
+# ---------------------------------------------------------------- landing --
+
+@app.route("/")
+def landing():
+    conn = db.get_connection()
+    torneo = one(conn, "SELECT * FROM torneos LIMIT 1")
+    n_clubes = one(conn, "SELECT COUNT(*) c FROM clubes")["c"]
+    n_jugadores = one(conn, "SELECT COUNT(*) c FROM jugadores")["c"]
+    n_ciudades = one(conn, "SELECT COUNT(*) c FROM ciudades")["c"]
+    conn.close()
+    return render_template("landing.html", torneo=torneo, n_clubes=n_clubes,
+                            n_jugadores=n_jugadores, n_ciudades=n_ciudades)
+
+
+# --------------------------------------------------------------- admin ----
+
+@app.route("/admin")
+def admin_dashboard():
+    conn = db.get_connection()
+    torneo = one(conn, "SELECT * FROM torneos LIMIT 1")
+    stats = {
+        "torneos": one(conn, "SELECT COUNT(*) c FROM torneos")["c"],
+        "clubes": one(conn, "SELECT COUNT(*) c FROM clubes")["c"],
+        "jugadores": one(conn, "SELECT COUNT(*) c FROM jugadores")["c"],
+        "partidos_jugados": one(conn, "SELECT COUNT(*) c FROM partidos WHERE estado='Finalizado'")["c"],
+    }
+    ciudades = q(conn, """SELECT c.nombre, COUNT(cl.id) n_clubes
+                           FROM ciudades c LEFT JOIN clubes cl ON cl.ciudad_id = c.id
+                           GROUP BY c.id ORDER BY c.nombre""")
+
+    tabla = q(conn, "SELECT id, nombre, codigo FROM clubes")
+    posiciones = []
+    for club in tabla:
+        cid = club["id"]
+        pj = one(conn, """SELECT COUNT(*) c FROM partidos
+                           WHERE estado='Finalizado' AND (club_local_id=? OR club_visitante_id=?)""",
+                 (cid, cid))["c"]
+        gf = one(conn, """SELECT COALESCE(SUM(CASE WHEN club_local_id=? THEN goles_local ELSE goles_visitante END),0) g
+                           FROM partidos WHERE estado='Finalizado' AND (club_local_id=? OR club_visitante_id=?)""",
+                 (cid, cid, cid))["g"]
+        gc = one(conn, """SELECT COALESCE(SUM(CASE WHEN club_local_id=? THEN goles_visitante ELSE goles_local END),0) g
+                           FROM partidos WHERE estado='Finalizado' AND (club_local_id=? OR club_visitante_id=?)""",
+                 (cid, cid, cid))["g"]
+        ganados = one(conn, """SELECT COUNT(*) c FROM partidos WHERE estado='Finalizado' AND
+                              ((club_local_id=? AND goles_local>goles_visitante) OR
+                               (club_visitante_id=? AND goles_visitante>goles_local))""", (cid, cid))["c"]
+        empatados = one(conn, """SELECT COUNT(*) c FROM partidos WHERE estado='Finalizado' AND
+                              (club_local_id=? OR club_visitante_id=?) AND goles_local=goles_visitante""",
+                        (cid, cid))["c"]
+        perdidos = pj - ganados - empatados
+        pts = ganados * 3 + empatados
+        posiciones.append({"club": club, "pj": pj, "g": ganados, "e": empatados, "p": perdidos,
+                            "gf": gf, "gc": gc, "pts": pts})
+    posiciones.sort(key=lambda x: (-x["pts"], -(x["gf"] - x["gc"])))
+
+    proximos = q(conn, """SELECT p.*, cl.nombre local_nombre, cv.nombre visitante_nombre, e.nombre estadio_nombre
+                           FROM partidos p
+                           JOIN clubes cl ON cl.id = p.club_local_id
+                           JOIN clubes cv ON cv.id = p.club_visitante_id
+                           JOIN estadios e ON e.id = p.estadio_id
+                           WHERE p.estado='Programado'
+                           ORDER BY p.fecha, p.hora LIMIT 6""")
+
+    docs_pendientes = one(conn, "SELECT COUNT(*) c FROM documentos WHERE estado='Pendiente'")["c"]
+    docs_rechazados = one(conn, "SELECT COUNT(*) c FROM documentos WHERE estado='Rechazado'")["c"]
+
+    conn.close()
+    return render_template("admin_dashboard.html", torneo=torneo, stats=stats, ciudades=ciudades,
+                            posiciones=posiciones[:12], proximos=proximos,
+                            docs_pendientes=docs_pendientes, docs_rechazados=docs_rechazados)
+
+
+@app.route("/admin/torneos", methods=["GET", "POST"])
+def admin_torneos():
+    conn = db.get_connection()
+    if request.method == "POST":
+        conn.execute("""INSERT INTO torneos (nombre, categoria, temporada, fecha_inicio, fecha_fin, estado)
+                         VALUES (?,?,?,?,?,?)""",
+                     (request.form["nombre"], request.form["categoria"], request.form["temporada"],
+                      request.form["fecha_inicio"], request.form["fecha_fin"], "En curso"))
+        conn.commit()
+        flash(f"Torneo \"{request.form['nombre']}\" creado.", "success")
+        conn.close()
+        return redirect(url_for("admin_torneos"))
+    torneos = q(conn, "SELECT * FROM torneos ORDER BY id DESC")
+    conn.close()
+    return render_template("torneos.html", torneos=torneos)
+
+
+@app.route("/admin/clubes", methods=["GET", "POST"])
+def admin_clubes():
+    conn = db.get_connection()
+    if request.method == "POST":
+        ciudad_id = request.form["ciudad_id"]
+        ciudad_nombre = one(conn, "SELECT nombre FROM ciudades WHERE id=?", (ciudad_id,))["nombre"]
+        codigo = f"{ciudad_nombre[:3].upper()}-{random.randint(200,999)}"
+        torneo_id = one(conn, "SELECT id FROM torneos ORDER BY id DESC LIMIT 1")["id"]
+        conn.execute("INSERT INTO clubes (nombre, ciudad_id, codigo, color, torneo_id) VALUES (?,?,?,?,?)",
+                     (request.form["nombre"], ciudad_id, codigo, "#2E7D46", torneo_id))
+        conn.commit()
+        flash(f"Club \"{request.form['nombre']}\" creado con código {codigo}.", "success")
+        conn.close()
+        return redirect(url_for("admin_clubes"))
+
+    clubes = q(conn, """SELECT cl.*, c.nombre ciudad_nombre,
+                        (SELECT COUNT(*) FROM jugadores j WHERE j.club_id=cl.id) n_jugadores,
+                        (SELECT COUNT(*) FROM staff s WHERE s.club_id=cl.id) n_staff
+                        FROM clubes cl JOIN ciudades c ON c.id = cl.ciudad_id
+                        ORDER BY c.nombre, cl.nombre""")
+    ciudades = q(conn, "SELECT * FROM ciudades ORDER BY nombre")
+    conn.close()
+    return render_template("clubes.html", clubes=clubes, ciudades=ciudades)
+
+
+@app.route("/admin/clubes/<int:club_id>", methods=["GET", "POST"])
+def admin_club_detail(club_id):
+    conn = db.get_connection()
+    if request.method == "POST":
+        conn.execute("INSERT INTO staff (club_id, nombre, rol, telefono, email) VALUES (?,?,?,?,?)",
+                     (club_id, request.form["nombre"], request.form["rol"],
+                      request.form["telefono"], request.form["email"]))
+        conn.commit()
+        flash(f"{request.form['nombre']} inscrito como {request.form['rol']}.", "success")
+        conn.close()
+        return redirect(url_for("admin_club_detail", club_id=club_id))
+
+    club = one(conn, """SELECT cl.*, c.nombre ciudad_nombre FROM clubes cl
+                         JOIN ciudades c ON c.id = cl.ciudad_id WHERE cl.id=?""", (club_id,))
+    staff = q(conn, "SELECT * FROM staff WHERE club_id=? ORDER BY rol", (club_id,))
+    jugadores = q(conn, """SELECT j.*, p.nombre padre_nombre FROM jugadores j
+                            LEFT JOIN padres p ON p.id = j.padre_id
+                            WHERE j.club_id=? ORDER BY j.nombre""", (club_id,))
+    conn.close()
+    return render_template("club_detail.html", club=club, staff=staff, jugadores=jugadores)
+
+
+@app.route("/admin/documentos")
+def admin_documentos():
+    conn = db.get_connection()
+    estado_filtro = request.args.get("estado", "Pendiente")
+    docs = q(conn, """SELECT d.*, j.nombre jugador_nombre, cl.nombre club_nombre
+                       FROM documentos d
+                       JOIN jugadores j ON j.id = d.jugador_id
+                       JOIN clubes cl ON cl.id = j.club_id
+                       WHERE d.estado=?
+                       ORDER BY d.fecha_carga DESC LIMIT 60""", (estado_filtro,))
+    resumen = q(conn, "SELECT estado, COUNT(*) c FROM documentos GROUP BY estado")
+    conn.close()
+    return render_template("documentos.html", docs=docs, resumen=resumen, estado_filtro=estado_filtro)
+
+
+@app.route("/admin/documentos/<int:doc_id>/revisar", methods=["POST"])
+def revisar_documento(doc_id):
+    nuevo_estado = request.form["estado"]
+    conn = db.get_connection()
+    comentario = {
+        "Aprobado": "Revisado manualmente por el administrador: documento válido.",
+        "Rechazado": "Revisado manualmente por el administrador: documento no válido.",
+    }.get(nuevo_estado, "En cola de revisión automática.")
+    conn.execute("UPDATE documentos SET estado=?, comentario_ia=? WHERE id=?",
+                 (nuevo_estado, comentario, doc_id))
+    conn.commit()
+    conn.close()
+    flash("Documento actualizado.", "success")
+    return redirect(request.referrer or url_for("admin_documentos"))
+
+
+@app.route("/admin/partidos/<int:partido_id>")
+def partido_detail(partido_id):
+    conn = db.get_connection()
+    partido = one(conn, """SELECT p.*, cl.nombre local_nombre, cl.color local_color,
+                                   cv.nombre visitante_nombre, cv.color visitante_color,
+                                   e.nombre estadio_nombre, ci.nombre ciudad_nombre
+                            FROM partidos p
+                            JOIN clubes cl ON cl.id = p.club_local_id
+                            JOIN clubes cv ON cv.id = p.club_visitante_id
+                            JOIN estadios e ON e.id = p.estadio_id
+                            JOIN ciudades ci ON ci.id = e.ciudad_id
+                            WHERE p.id=?""", (partido_id,))
+    eventos = q(conn, """SELECT ev.*, j.nombre jugador_nombre FROM eventos ev
+                          LEFT JOIN jugadores j ON j.id = ev.jugador_id
+                          WHERE ev.partido_id=? ORDER BY ev.minuto""", (partido_id,))
+    conn.close()
+    return render_template("partido_detail.html", partido=partido, eventos=eventos)
+
+
+@app.route("/admin/seguimiento")
+def seguimiento():
+    conn = db.get_connection()
+    partidos = q(conn, """SELECT p.*, cl.nombre local_nombre, cv.nombre visitante_nombre,
+                                  e.nombre estadio_nombre, ci.nombre ciudad_nombre
+                           FROM partidos p
+                           JOIN clubes cl ON cl.id = p.club_local_id
+                           JOIN clubes cv ON cv.id = p.club_visitante_id
+                           JOIN estadios e ON e.id = p.estadio_id
+                           JOIN ciudades ci ON ci.id = e.ciudad_id
+                           ORDER BY p.jornada, p.fecha""")
+    jornadas = {}
+    for p in partidos:
+        jornadas.setdefault(p["jornada"], []).append(p)
+    conn.close()
+    return render_template("seguimiento.html", jornadas=jornadas)
+
+
+# ------------------------------------------------------------ inscripcion --
+
+@app.route("/inscripcion", methods=["GET", "POST"])
+def inscripcion():
+    conn = db.get_connection()
+    club = None
+    error = None
+    if request.method == "POST":
+        codigo = request.form.get("codigo", "").strip().upper()
+        club = one(conn, "SELECT * FROM clubes WHERE codigo=?", (codigo,))
+        if not club:
+            error = "No encontramos ningún club con ese código. Verifícalo con el director técnico."
+    conn.close()
+    return render_template("inscripcion.html", club=club, error=error)
+
+
+@app.route("/inscripcion/<codigo>/formulario", methods=["GET", "POST"])
+def inscripcion_formulario(codigo):
+    conn = db.get_connection()
+    club = one(conn, "SELECT * FROM clubes WHERE codigo=?", (codigo.upper(),))
+    if not club:
+        conn.close()
+        return redirect(url_for("inscripcion"))
+
+    if request.method == "POST":
+        conn.execute("INSERT INTO padres (nombre, telefono, email, parentesco) VALUES (?,?,?,?)",
+                     (request.form["padre_nombre"], request.form["padre_telefono"],
+                      request.form["padre_email"], request.form["parentesco"]))
+        padre_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+        conn.execute("""INSERT INTO jugadores
+            (club_id, padre_id, nombre, fecha_nacimiento, categoria, posicion, numero_camiseta,
+             talla_uniforme, eps, tipo_sangre, alergias, contacto_emergencia, telefono_emergencia,
+             observaciones_medicas)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (club["id"], padre_id, request.form["jugador_nombre"], request.form["fecha_nacimiento"],
+             request.form["categoria"], request.form["posicion"], request.form.get("numero_camiseta") or None,
+             request.form["talla_uniforme"], request.form["eps"], request.form["tipo_sangre"],
+             request.form.get("alergias") or "Ninguna", request.form["padre_nombre"],
+             request.form["padre_telefono"], request.form.get("observaciones_medicas") or "Ninguna"))
+        jugador_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+        for tipo in db.TIPOS_DOC:
+            conn.execute("""INSERT INTO documentos (jugador_id, tipo, nombre_archivo, estado, comentario_ia, fecha_carga)
+                             VALUES (?,?,?,?,?,?)""",
+                         (jugador_id, tipo, "pendiente_de_carga.pdf", "Pendiente",
+                          "En espera de que el acudiente suba el documento.", date.today().isoformat()))
+        conn.commit()
+        conn.close()
+        return redirect(url_for("inscripcion_confirmacion", jugador_id=jugador_id))
+
+    conn.close()
+    return render_template("inscripcion_formulario.html", club=club, categorias=db.CATEGORIAS,
+                            posiciones=db.POSICIONES, eps_list=db.EPS_LIST)
+
+
+@app.route("/inscripcion/confirmacion/<int:jugador_id>")
+def inscripcion_confirmacion(jugador_id):
+    conn = db.get_connection()
+    jugador = one(conn, """SELECT j.*, cl.nombre club_nombre FROM jugadores j
+                            JOIN clubes cl ON cl.id = j.club_id WHERE j.id=?""", (jugador_id,))
+    documentos = q(conn, "SELECT * FROM documentos WHERE jugador_id=?", (jugador_id,))
+    conn.close()
+    return render_template("inscripcion_confirmacion.html", jugador=jugador, documentos=documentos)
+
+
+@app.route("/inscripcion/documentos/<int:doc_id>/subir", methods=["POST"])
+def subir_documento(doc_id):
+    """Simula la carga de un documento y su revisión automática por IA."""
+    conn = db.get_connection()
+    doc = one(conn, "SELECT * FROM documentos WHERE id=?", (doc_id,))
+    archivo = request.files.get("archivo")
+    nombre_archivo = archivo.filename if archivo and archivo.filename else f"documento_{doc_id}.pdf"
+
+    resultado = random.choices(
+        ["Aprobado", "Rechazado", "Pendiente"], weights=[70, 15, 15], k=1)[0]
+    comentarios = {
+        "Aprobado": "La IA confirma que el documento corresponde al tipo solicitado y los datos coinciden con el registro del jugador.",
+        "Rechazado": "La IA no pudo verificar el documento: la imagen está borrosa o no corresponde al tipo solicitado. Vuelve a cargarlo.",
+        "Pendiente": "El documento requiere revisión manual de un administrador antes de aprobarse.",
+    }
+    conn.execute("""UPDATE documentos SET nombre_archivo=?, estado=?, comentario_ia=?, confianza_ia=?, fecha_carga=?
+                     WHERE id=?""",
+                 (nombre_archivo, resultado, comentarios[resultado],
+                  random.randint(60, 99), date.today().isoformat(), doc_id))
+    conn.commit()
+    jugador_id = doc["jugador_id"]
+    conn.close()
+    return redirect(url_for("inscripcion_confirmacion", jugador_id=jugador_id))
+
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5050)

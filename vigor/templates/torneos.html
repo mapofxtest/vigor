@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% set active = 'torneos' %}
+{% block title %}Torneos · Vigo{% endblock %}
+{% block content %}
+
+<div class="section-head">
+  <h1>Torneos</h1>
+</div>
+
+<div class="two-col">
+  <div>
+    <table>
+      <thead><tr><th>Nombre</th><th>Categoría</th><th>Temporada</th><th>Fechas</th><th>Estado</th></tr></thead>
+      <tbody>
+        {% for t in torneos %}
+        <tr>
+          <td><strong>{{ t.nombre }}</strong></td>
+          <td>{{ t.categoria }}</td>
+          <td>{{ t.temporada }}</td>
+          <td>{{ t.fecha_inicio }} → {{ t.fecha_fin }}</td>
+          <td>{{ t.estado }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div>
+    <h3>Crear nuevo torneo</h3>
+    <form method="post" class="form-card" style="margin-top:16px">
+      <div class="field">
+        <label for="nombre">Nombre del torneo</label>
+        <input id="nombre" name="nombre" required placeholder="Copa Sabana de Occidente 2027">
+      </div>
+      <div class="field">
+        <label for="categoria">Categorías incluidas</label>
+        <input id="categoria" name="categoria" required placeholder="Sub-9 a Sub-15">
+      </div>
+      <div class="field">
+        <label for="temporada">Temporada</label>
+        <input id="temporada" name="temporada" required placeholder="2027-I">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="fecha_inicio">Fecha de inicio</label>
+          <input type="date" id="fecha_inicio" name="fecha_inicio" required>
+        </div>
+        <div class="field">
+          <label for="fecha_fin">Fecha de cierre</label>
+          <input type="date" id="fecha_fin" name="fecha_fin" required>
+        </div>
+      </div>
+      <button class="btn" type="submit">Crear torneo</button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Panel gerencial · Vigo{% endblock %}
+{% block content %}
+
+<div class="section-head">
+  <div>
+    <h1>{{ torneo.nombre }}</h1>
+    <p class="muted">{{ torneo.categoria }} · Temporada {{ torneo.temporada }} · {{ torneo.estado }}</p>
+  </div>
+  <a href="{{ url_for('admin_torneos') }}" class="btn secondary">Ver torneos</a>
+</div>
+
+<div class="scoreboard">
+  <div class="stat"><div class="num">{{ stats.torneos }}</div><div class="label">Torneos activos</div></div>
+  <div class="stat"><div class="num">{{ stats.clubes }}</div><div class="label">Clubes inscritos</div></div>
+  <div class="stat"><div class="num">{{ stats.jugadores }}</div><div class="label">Jugadores registrados</div></div>
+  <div class="stat"><div class="num">{{ stats.partidos_jugados }}</div><div class="label">Partidos jugados</div></div>
+</div>
+
+<div class="section">
+  <div class="section-head"><h2>Municipios participantes</h2></div>
+  <div class="plain-list">
+    {% for c in ciudades %}
+      <span class="tag"><svg class="icon"><use href="#icon-pin"/></svg>{{ c.nombre }} · {{ c.n_clubes }} clubes</span>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="two-col section">
+  <div>
+    <div class="section-head">
+      <h2>Tabla de posiciones</h2>
+      <a href="{{ url_for('seguimiento') }}" class="muted" style="text-decoration:none">Ver todos los partidos</a>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Club</th><th class="num">PJ</th><th class="num">G</th><th class="num">E</th><th class="num">P</th><th class="num">GF</th><th class="num">GC</th><th class="num">Pts</th></tr>
+      </thead>
+      <tbody>
+        {% for row in posiciones %}
+        <tr class="{{ 'highlight' if loop.index <= 3 }}">
+          <td><a href="{{ url_for('admin_club_detail', club_id=row.club.id) }}" style="text-decoration:none;color:inherit">{{ row.club.nombre }}</a></td>
+          <td class="num">{{ row.pj }}</td>
+          <td class="num">{{ row.g }}</td>
+          <td class="num">{{ row.e }}</td>
+          <td class="num">{{ row.p }}</td>
+          <td class="num">{{ row.gf }}</td>
+          <td class="num">{{ row.gc }}</td>
+          <td class="num"><strong>{{ row.pts }}</strong></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div>
+    <div class="section-head"><h3>Próximos partidos</h3></div>
+    {% if proximos %}
+      {% for p in proximos %}
+        <a href="{{ url_for('partido_detail', partido_id=p.id) }}" class="match-row">
+          <span class="teams">{{ p.local_nombre }} vs {{ p.visitante_nombre }}</span>
+          <span class="meta">{{ p.fecha }} · {{ p.hora }}<br>{{ p.estadio_nombre }}</span>
+        </a>
+      {% endfor %}
+    {% else %}
+      <div class="empty">No hay partidos programados por ahora.</div>
+    {% endif %}
+
+    <div class="section">
+      <h3>Documentos por revisar</h3>
+      <p class="status pendiente" style="margin-top:10px">
+        <svg class="icon"><use href="#icon-clock"/></svg> {{ docs_pendientes }} pendientes
+      </p>
+      <p class="status rechazado">
+        <svg class="icon"><use href="#icon-x"/></svg> {{ docs_rechazados }} rechazados
+      </p>
+      <a href="{{ url_for('admin_documentos') }}" class="btn secondary small" style="margin-top:10px">Ir a documentos</a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

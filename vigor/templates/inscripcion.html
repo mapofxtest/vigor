@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% set active = 'inscripcion' %}
+{% block title %}Inscripción de jugador · Vigo{% endblock %}
+{% block content %}
+
+<div class="hero" style="padding-top:24px">
+  <h1>Inscribe a tu hijo o hija</h1>
+  <p style="max-width:480px;margin-top:12px">
+    Pide el código de tu club al director técnico o al delegado, e ingrésalo aquí para empezar la inscripción.
+  </p>
+</div>
+
+<form method="post" class="form-card">
+  {% if error %}<div class="flash" style="border-color:var(--red);background:var(--red-tint);color:var(--red)">{{ error }}</div>{% endif %}
+  <div class="field">
+    <label for="codigo">Código del club</label>
+    <input id="codigo" name="codigo" required placeholder="Ej: FAC-100" style="text-transform:uppercase">
+  </div>
+  <button class="btn" type="submit">Continuar</button>
+</form>
+
+{% if club %}
+<div class="section" style="max-width:640px">
+  <div class="tile" style="border:1px solid var(--line)">
+    <h3>{{ club.nombre }}</h3>
+    <p class="meta">Código verificado correctamente.</p>
+    <a class="btn" href="{{ url_for('inscripcion_formulario', codigo=club.codigo) }}" style="margin-top:12px">Empezar inscripción →</a>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Vigo · Copa Sabana de Occidente{% endblock %}
+{% block content %}
+
+<div class="hero">
+  <h1>Un torneo, ocho municipios,<br>un solo tablero.</h1>
+  <p style="max-width:520px;margin-top:16px;font-size:1.05rem">
+    Vigo organiza la {{ torneo.nombre if torneo else "Copa Sabana de Occidente" }}: clubes, jugadores,
+    documentos y partidos en un solo lugar, desde la inscripción hasta el silbatazo final.
+  </p>
+
+  <div class="scoreboard">
+    <div class="stat"><div class="num">{{ n_ciudades }}</div><div class="label">Municipios en juego</div></div>
+    <div class="stat"><div class="num">{{ n_clubes }}</div><div class="label">Clubes inscritos</div></div>
+    <div class="stat"><div class="num">{{ n_jugadores }}</div><div class="label">Jugadores registrados</div></div>
+  </div>
+</div>
+
+<div class="role-grid">
+  <a class="role-card" href="{{ url_for('admin_dashboard') }}">
+    <svg class="icon icon-lg"><use href="#icon-trophy"/></svg>
+    <h3>Administrador del torneo</h3>
+    <p>Crea torneos, clubes y sigue el campeonato con un panel gerencial.</p>
+  </a>
+  <a class="role-card" href="{{ url_for('admin_clubes') }}">
+    <svg class="icon icon-lg"><use href="#icon-shield"/></svg>
+    <h3>Director técnico / staff</h3>
+    <p>Consulta tu club, inscribe cuerpo técnico y revisa tu nómina de jugadores.</p>
+  </a>
+  <a class="role-card" href="{{ url_for('inscripcion') }}">
+    <svg class="icon icon-lg"><use href="#icon-user"/></svg>
+    <h3>Soy acudiente</h3>
+    <p>Ingresa con el código de tu club para inscribir a tu hijo o hija y subir sus documentos.</p>
+  </a>
+</div>
+
+{% endblock %}

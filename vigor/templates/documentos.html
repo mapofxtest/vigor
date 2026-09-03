@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% set active = 'documentos' %}
+{% block title %}Documentos · Vigo{% endblock %}
+{% block content %}
+
+<div class="section-head">
+  <div>
+    <h1>Revisión de documentos</h1>
+    <p class="muted">Cada documento cargado por un acudiente pasa por una revisión automática antes de llegar aquí.</p>
+  </div>
+</div>
+
+<div class="plain-list" style="margin-bottom:8px">
+  {% for r in resumen %}
+    <span class="tag">{{ r.estado }} · {{ r.c }}</span>
+  {% endfor %}
+</div>
+
+<div class="doc-tabs">
+  <a href="{{ url_for('admin_documentos', estado='Pendiente') }}" class="{{ 'active' if estado_filtro=='Pendiente' }}">Pendientes</a>
+  <a href="{{ url_for('admin_documentos', estado='Rechazado') }}" class="{{ 'active' if estado_filtro=='Rechazado' }}">Rechazados</a>
+  <a href="{{ url_for('admin_documentos', estado='Aprobado') }}" class="{{ 'active' if estado_filtro=='Aprobado' }}">Aprobados</a>
+</div>
+
+{% if docs %}
+<table>
+  <thead>
+    <tr><th>Jugador</th><th>Club</th><th>Tipo de documento</th><th>Comentario de la IA</th><th>Cargado</th><th></th></tr>
+  </thead>
+  <tbody>
+    {% for d in docs %}
+    <tr>
+      <td>{{ d.jugador_nombre }}</td>
+      <td>{{ d.club_nombre }}</td>
+      <td>{{ d.tipo }}</td>
+      <td class="muted" style="max-width:280px">{{ d.comentario_ia }}{% if d.confianza_ia %} · {{ d.confianza_ia }}% de confianza{% endif %}</td>
+      <td>{{ d.fecha_carga }}</td>
+      <td style="white-space:nowrap">
+        {% if d.estado != 'Aprobado' %}
+        <form method="post" action="{{ url_for('revisar_documento', doc_id=d.id) }}" style="display:inline">
+          <input type="hidden" name="estado" value="Aprobado">
+          <button class="btn small" type="submit">Aprobar</button>
+        </form>
+        {% endif %}
+        {% if d.estado != 'Rechazado' %}
+        <form method="post" action="{{ url_for('revisar_documento', doc_id=d.id) }}" style="display:inline">
+          <input type="hidden" name="estado" value="Rechazado">
+          <button class="btn small danger" type="submit">Rechazar</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No hay documentos en estado "{{ estado_filtro }}".</div>
+{% endif %}
+
+{% endblock %}

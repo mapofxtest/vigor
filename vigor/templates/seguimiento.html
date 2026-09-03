@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% set active = 'seguimiento' %}
+{% block title %}Seguimiento del torneo · Vigo{% endblock %}
+{% block content %}
+
+<div class="section-head">
+  <h1>Seguimiento del torneo</h1>
+</div>
+
+{% for jornada, partidos in jornadas.items() %}
+<div class="jornada-block">
+  <h3>Jornada {{ jornada }}</h3>
+  <div class="pitch-divider" style="margin:10px 0 4px"></div>
+  {% for p in partidos %}
+    <a href="{{ url_for('partido_detail', partido_id=p.id) }}" class="match-row">
+      <span class="teams">
+        {{ p.local_nombre }}
+        <span class="score">{{ p.goles_local if p.estado=='Finalizado' else '–' }} : {{ p.goles_visitante if p.estado=='Finalizado' else '–' }}</span>
+        {{ p.visitante_nombre }}
+      </span>
+      <span class="meta">{{ p.ciudad_nombre }} · {{ p.estadio_nombre }}<br>{{ p.fecha }} · {{ p.estado }}</span>
+    </a>
+  {% endfor %}
+</div>
+{% endfor %}
+
+{% endblock %}

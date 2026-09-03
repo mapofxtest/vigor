@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% set active = 'clubes' %}
+{% block title %}Clubes · Vigo{% endblock %}
+{% block content %}
+
+<div class="section-head">
+  <div>
+    <h1>Clubes</h1>
+    <p class="muted">Cada club recibe un código único para que sus acudientes inscriban jugadores.</p>
+  </div>
+</div>
+
+<div class="tile-grid">
+  {% for c in clubes %}
+  <div class="tile">
+    <h3>{{ c.nombre }}</h3>
+    <div class="meta"><svg class="icon"><use href="#icon-pin"/></svg> {{ c.ciudad_nombre }}</div>
+    <div class="code">{{ c.codigo }}</div>
+    <div class="meta">{{ c.n_jugadores }} jugadores · {{ c.n_staff }} staff</div>
+    <div style="margin-top:14px">
+      <a class="link" href="{{ url_for('admin_club_detail', club_id=c.id) }}">Ver club →</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="section" style="max-width:560px">
+  <h3>Registrar nuevo club</h3>
+  <form method="post" class="form-card" style="margin-top:16px">
+    <div class="field">
+      <label for="nombre">Nombre del club</label>
+      <input id="nombre" name="nombre" required placeholder="Deportivo Sabana Norte">
+    </div>
+    <div class="field">
+      <label for="ciudad_id">Municipio</label>
+      <select id="ciudad_id" name="ciudad_id" required>
+        {% for ciudad in ciudades %}
+          <option value="{{ ciudad.id }}">{{ ciudad.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button class="btn" type="submit">Crear club y generar código</button>
+  </form>
+</div>
+
+{% endblock %}
