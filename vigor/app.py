@@ -25,10 +25,11 @@ def one(conn, sql, params=()):
 def _guardar_y_analizar(archivo, tipo_documento):
     """Guarda el archivo subido en disco (si hay alguno) y ejecuta el análisis de IA
     (hoy simulado, ver validacion_ia.py). Devuelve (nombre_original, ruta_relativa,
-    estado, comentario, confianza)."""
+    estado_ia, comentario_ia, confianza). Este resultado es solo la PRE-VALIDACIÓN de
+    la IA: el estado final que ve el acudiente lo decide el administrador."""
     if not archivo or not archivo.filename:
-        estado, comentario, confianza = validacion_ia.analizar_documento(None, tipo_documento)
-        return None, None, estado, comentario, confianza
+        estado_ia, comentario, confianza = validacion_ia.analizar_documento(None, tipo_documento)
+        return None, None, estado_ia, comentario, confianza
 
     nombre_original = secure_filename(archivo.filename) or "documento"
     extension = os.path.splitext(nombre_original)[1]
@@ -36,8 +37,19 @@ def _guardar_y_analizar(archivo, tipo_documento):
     ruta_absoluta = os.path.join(UPLOAD_DIR, nombre_disco)
     archivo.save(ruta_absoluta)
 
-    estado, comentario, confianza = validacion_ia.analizar_documento(ruta_absoluta, tipo_documento)
-    return nombre_original, nombre_disco, estado, comentario, confianza
+    estado_ia, comentario, confianza = validacion_ia.analizar_documento(ruta_absoluta, tipo_documento)
+    return nombre_original, nombre_disco, estado_ia, comentario, confianza
+
+
+def _borrar_archivo_si_existe(ruta_archivo):
+    if not ruta_archivo:
+        return
+    ruta_absoluta = os.path.join(UPLOAD_DIR, ruta_archivo)
+    try:
+        if os.path.isfile(ruta_absoluta):
+            os.remove(ruta_absoluta)
+    except OSError:
+        pass
 
 
 # ---------------------------------------------------------------- landing --
@@ -225,15 +237,32 @@ def admin_documentos():
 def revisar_documento(doc_id):
     nuevo_estado = request.form["estado"]
     conn = db.get_connection()
-    comentario = {
+    comentario_admin = {
         "Aprobado": "Revisado manualmente por el administrador: documento válido.",
         "Rechazado": "Revisado manualmente por el administrador: documento no válido.",
-    }.get(nuevo_estado, "En cola de revisión automática.")
-    conn.execute("UPDATE documentos SET estado=?, comentario_ia=? WHERE id=?",
-                 (nuevo_estado, comentario, doc_id))
+    }.get(nuevo_estado, None)
+    conn.execute("UPDATE documentos SET estado=?, comentario_admin=? WHERE id=?",
+                 (nuevo_estado, comentario_admin, doc_id))
     conn.commit()
     conn.close()
     flash("Documento actualizado.", "success")
+    return redirect(request.referrer or url_for("admin_documentos"))
+
+
+@app.route("/admin/documentos/<int:doc_id>/eliminar", methods=["POST"])
+def eliminar_documento(doc_id):
+    conn = db.get_connection()
+    doc = one(conn, "SELECT * FROM documentos WHERE id=?", (doc_id,))
+    if doc:
+        _borrar_archivo_si_existe(doc["ruta_archivo"])
+        conn.execute("""UPDATE documentos SET nombre_archivo=NULL, ruta_archivo=NULL,
+                         estado='Pendiente', estado_ia='Pendiente',
+                         comentario_ia='Aún no se ha cargado este documento.',
+                         confianza_ia=NULL, comentario_admin=NULL, fecha_carga=NULL
+                         WHERE id=?""", (doc_id,))
+        conn.commit()
+        flash("Documento eliminado. El acudiente deberá volver a cargarlo.", "success")
+    conn.close()
     return redirect(request.referrer or url_for("admin_documentos"))
 
 
@@ -363,12 +392,12 @@ def inscripcion_formulario(codigo):
 
         for d in db.DOCUMENTOS_REQUERIDOS:
             archivo = request.files.get(f"archivo_{d['campo']}")
-            nombre_original, ruta_archivo, estado, comentario, confianza = _guardar_y_analizar(archivo, d["tipo"])
+            nombre_original, ruta_archivo, estado_ia, comentario_ia, confianza = _guardar_y_analizar(archivo, d["tipo"])
             conn.execute("""INSERT INTO documentos
-                (jugador_id, tipo, nombre_archivo, ruta_archivo, estado, comentario_ia, confianza_ia, fecha_carga)
-                VALUES (?,?,?,?,?,?,?,?)""",
-                (jugador_id, d["tipo"], nombre_original, ruta_archivo, estado, comentario, confianza,
-                 date.today().isoformat() if nombre_original else None))
+                (jugador_id, tipo, nombre_archivo, ruta_archivo, estado, estado_ia, comentario_ia, confianza_ia, fecha_carga)
+                VALUES (?,?,?,?,?,?,?,?,?)""",
+                (jugador_id, d["tipo"], nombre_original, ruta_archivo, "Pendiente", estado_ia, comentario_ia,
+                 confianza, date.today().isoformat() if nombre_original else None))
         conn.commit()
         conn.close()
         return redirect(url_for("inscripcion_confirmacion", jugador_id=jugador_id))
@@ -393,18 +422,27 @@ def inscripcion_confirmacion(jugador_id):
 
 @app.route("/inscripcion/documentos/<int:doc_id>/subir", methods=["POST"])
 def subir_documento(doc_id):
-    """Guarda el archivo cargado y ejecuta su revisión automática (simulada por ahora)."""
+    """Guarda el archivo cargado, borra el archivo anterior si estaba incorrecto, y
+    ejecuta la pre-validación por IA (hoy simulada). El estado final vuelve a quedar
+    en Pendiente hasta que el administrador lo confirme."""
     conn = db.get_connection()
     doc = one(conn, "SELECT * FROM documentos WHERE id=?", (doc_id,))
     archivo = request.files.get("archivo")
-    nombre_original, ruta_archivo, estado, comentario, confianza = _guardar_y_analizar(archivo, doc["tipo"])
+    nombre_original, ruta_archivo, estado_ia, comentario_ia, confianza = _guardar_y_analizar(archivo, doc["tipo"])
+
     if nombre_original is None:
-        nombre_original = doc["nombre_archivo"] or f"documento_{doc_id}.pdf"
-        ruta_archivo = doc["ruta_archivo"]
-        estado, comentario = "Pendiente", "El documento requiere revisión manual de un administrador antes de aprobarse."
-    conn.execute("""UPDATE documentos SET nombre_archivo=?, ruta_archivo=?, estado=?, comentario_ia=?,
-                     confianza_ia=?, fecha_carga=? WHERE id=?""",
-                 (nombre_original, ruta_archivo, estado, comentario, confianza, date.today().isoformat(), doc_id))
+        # No se seleccionó ningún archivo nuevo: no tocar el archivo existente.
+        conn.close()
+        flash("No seleccionaste ningún archivo.", "success")
+        return redirect(url_for("inscripcion_confirmacion", jugador_id=doc["jugador_id"]))
+
+    # Se cargó un archivo nuevo: borrar el anterior (si estaba incorrecto) y reemplazar.
+    _borrar_archivo_si_existe(doc["ruta_archivo"])
+    conn.execute("""UPDATE documentos SET nombre_archivo=?, ruta_archivo=?, estado='Pendiente',
+                     estado_ia=?, comentario_ia=?, confianza_ia=?, comentario_admin=NULL, fecha_carga=?
+                     WHERE id=?""",
+                 (nombre_original, ruta_archivo, estado_ia, comentario_ia, confianza,
+                  date.today().isoformat(), doc_id))
     conn.commit()
     jugador_id = doc["jugador_id"]
     conn.close()

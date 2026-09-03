@@ -72,28 +72,24 @@
     </span>
   </div>
 
-  {% if item.no_aprobados %}
   <div class="tile" style="border:1px solid var(--gold);background:#FBF3E1;margin-bottom:16px">
     <p style="margin:0;font-weight:600;color:#8A6A1E;font-size:0.92rem">
-      La IA analizó los {{ item.documentos|length }} documentos de {{ j.nombre }} y encontró que
-      {{ item.no_aprobados|length }} de {{ item.documentos|length }} no {{ 'pasó' if item.no_aprobados|length == 1 else 'pasaron' }} el filtro:
+      Pre-validación de la IA para {{ j.nombre }} <span style="font-weight:400">(sujeta a tu confirmación):</span>
     </p>
     <ul style="margin:8px 0 0;padding-left:20px;font-size:0.86rem;color:#6b5216">
-      {% for d in item.no_aprobados %}
+      {% for d in item.documentos %}
         <li style="margin-bottom:4px">
-          <strong>{{ d.tipo }}</strong> ({{ d.estado }}) — {{ d.comentario_ia }}
+          <strong>{{ d.tipo }}</strong> —
+          {% if d.estado_ia == 'Aprobado' %}<svg class="icon"><use href="#icon-check"/></svg>
+          {% elif d.estado_ia == 'Rechazado' %}<svg class="icon"><use href="#icon-x"/></svg>
+          {% else %}<svg class="icon"><use href="#icon-clock"/></svg>{% endif %}
+          {{ d.estado_ia }}: {{ d.comentario_ia }}
           {% if d.confianza_ia %} · confianza IA: {{ d.confianza_ia }}%{% endif %}
+          {% if d.estado != 'Pendiente' %} <em>(ya confirmado por el administrador como {{ d.estado }})</em>{% endif %}
         </li>
       {% endfor %}
     </ul>
   </div>
-  {% else %}
-  <div class="tile" style="border:1px solid var(--green);background:var(--green-tint);margin-bottom:16px">
-    <p style="margin:0;font-weight:600;color:var(--green-dark);font-size:0.92rem">
-      La IA analizó los {{ item.documentos|length }} documentos de {{ j.nombre }}: los {{ item.documentos|length }} fueron aprobados.
-    </p>
-  </div>
-  {% endif %}
 
   <div class="tile-grid">
     {% for d in item.documentos %}
@@ -103,7 +99,7 @@
         {% if d.estado == 'Aprobado' %}<svg class="icon"><use href="#icon-check"/></svg>
         {% elif d.estado == 'Rechazado' %}<svg class="icon"><use href="#icon-x"/></svg>
         {% else %}<svg class="icon"><use href="#icon-clock"/></svg>{% endif %}
-        {{ d.estado }}
+        {{ d.estado }} <span class="muted" style="font-weight:400;font-size:0.78rem">(estado final)</span>
       </p>
 
       {% if d.ruta_archivo %}
@@ -114,8 +110,6 @@
       {% else %}
         <p class="muted" style="font-size:0.82rem">Sin archivo cargado todavía.</p>
       {% endif %}
-
-      <p class="muted" style="font-size:0.8rem">{{ d.comentario_ia }}{% if d.confianza_ia %} · {{ d.confianza_ia }}% de confianza{% endif %}</p>
 
       <div style="margin-top:12px;white-space:nowrap">
         {% if d.estado != 'Aprobado' %}
@@ -128,6 +122,12 @@
         <form method="post" action="{{ url_for('revisar_documento', doc_id=d.id) }}" style="display:inline">
           <input type="hidden" name="estado" value="Rechazado">
           <button class="btn small danger" type="submit">Rechazar</button>
+        </form>
+        {% endif %}
+        {% if d.ruta_archivo %}
+        <form method="post" action="{{ url_for('eliminar_documento', doc_id=d.id) }}" style="display:inline"
+              onsubmit="return confirm('Esto borra el archivo cargado y el jugador deberá volver a subirlo. ¿Continuar?');">
+          <button class="btn small secondary" type="submit">Eliminar</button>
         </form>
         {% endif %}
       </div>

@@ -87,8 +87,10 @@ CREATE TABLE documentos (
     nombre_archivo TEXT,
     ruta_archivo TEXT,
     estado TEXT DEFAULT 'Pendiente',
+    estado_ia TEXT DEFAULT 'Pendiente',
     comentario_ia TEXT,
     confianza_ia INTEGER,
+    comentario_admin TEXT,
     fecha_carga TEXT,
     FOREIGN KEY (jugador_id) REFERENCES jugadores(id)
 );
@@ -342,14 +344,15 @@ def build_database():
                     "Rechazado": "La imagen no coincide con el tipo de documento o está incompleta.",
                 }[estado]
                 cur.execute("""INSERT INTO documentos
-                    (jugador_id, tipo, nombre_archivo, estado, comentario_ia, confianza_ia, fecha_carga)
-                    VALUES (?,?,?,?,?,?,?)""",
-                    (jugador_id, tipo, f"{tipo.split(' ')[0].lower()}_{jugador_id}.pdf", estado, comentario,
+                    (jugador_id, tipo, nombre_archivo, estado, estado_ia, comentario_ia, confianza_ia, fecha_carga)
+                    VALUES (?,?,?,?,?,?,?,?)""",
+                    (jugador_id, tipo, f"{tipo.split(' ')[0].lower()}_{jugador_id}.pdf", estado, estado, comentario,
                      random.randint(70, 99) if estado != "Pendiente" else None,
                      (date.today() - timedelta(days=random.randint(0, 20))).isoformat()))
 
-    # Jugador demo fijo para presentaciones en vivo: siempre tiene un documento
-    # aprobado, uno rechazado y uno pendiente, para no depender del azar al presentar.
+    # Jugador demo fijo para presentaciones en vivo: la IA ya dio su prevalidación
+    # (una aprobada, una rechazada, una sin poder decidir) pero el estado FINAL queda
+    # "Pendiente" en los tres, para mostrar en vivo cómo el administrador confirma.
     demo_club_id = club_ids[0]
     cur.execute("INSERT INTO padres (nombre, telefono, email, parentesco) VALUES (?,?,?,?)",
                 ("Acudiente Demo", "3000000000", "acudiente.demo@vigor-demo.co", "Padre"))
@@ -376,12 +379,12 @@ def build_database():
             "El documento requiere revisión manual de un administrador antes de aprobarse."),
     }
     for d in DOCUMENTOS_REQUERIDOS:
-        estado, comentario = demo_estados[d["campo"]]
+        estado_ia, comentario = demo_estados[d["campo"]]
         cur.execute("""INSERT INTO documentos
-            (jugador_id, tipo, nombre_archivo, estado, comentario_ia, confianza_ia, fecha_carga)
-            VALUES (?,?,?,?,?,?,?)""",
-            (demo_jugador_id, d["tipo"], f"{d['campo']}_demo.pdf", estado, comentario,
-             92 if estado != "Pendiente" else None, date.today().isoformat()))
+            (jugador_id, tipo, nombre_archivo, estado, estado_ia, comentario_ia, confianza_ia, fecha_carga)
+            VALUES (?,?,?,?,?,?,?,?)""",
+            (demo_jugador_id, d["tipo"], f"{d['campo']}_demo.pdf", "Pendiente", estado_ia, comentario,
+             92 if estado_ia != "Pendiente" else None, date.today().isoformat()))
 
     # Partidos (round-robin simplificado por jornadas)
     estadio_ids = [row[0] for row in cur.execute("SELECT id FROM estadios").fetchall()]
