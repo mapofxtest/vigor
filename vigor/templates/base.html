@@ -19,6 +19,7 @@
       <span class="wordmark">Vigor</span>
       <span class="tagline">Copa Sabana de Occidente 2026</span>
     </a>
+    <button class="nav-toggle" type="button" aria-label="Abrir menú" onclick="document.querySelector('.navlinks').classList.toggle('open')">☰</button>
     <nav class="navlinks">
       <a href="{{ url_for('admin_dashboard') }}" class="{{ 'active' if active=='dashboard' }}">Panel gerencial</a>
       <a href="{{ url_for('admin_torneos') }}" class="{{ 'active' if active=='torneos' }}">Torneos</a>

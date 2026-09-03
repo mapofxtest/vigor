@@ -35,14 +35,30 @@ python db.py
 - **Clubes** (`/admin/clubes`): listado con código único por club, creación de clubes
   (el código se genera automáticamente), y detalle de cada club con su nómina y staff.
 - **Inscripción de staff**: dentro del detalle de cada club.
-- **Documentos** (`/admin/documentos`): cola de revisión con filtros por estado
+- **Documentos por estado** (`/admin/documentos`): cola con filtros por estado
   (Pendiente / Rechazado / Aprobado) y acciones para aprobar o rechazar manualmente.
+- **Documentos por club** (`/admin/documentos-por-club`): selecciona un club y ve, por
+  cada jugador, sus 3 documentos con un link para **abrir el archivo real que subió el
+  acudiente** (imagen o PDF) y botones de Aprobar/Rechazar por documento. Es la vista
+  pensada para gestión operativa día a día.
 - **Seguimiento** (`/admin/seguimiento`): partidos agrupados por jornada, con detalle de
   cronología (goles, faltas, tarjetas) por partido.
 - **Flujo del acudiente** (`/inscripcion`): ingreso con el código del club, formulario
-  extendido del jugador (datos médicos, EPS, contacto de emergencia, etc.) y carga de
-  documentos con una revisión automática simulada (aprobado / pendiente / rechazado con
-  un comentario, como lo haría un motor de IA real).
+  extendido del jugador (datos médicos, EPS, contacto de emergencia, etc.) con carga de
+  los 3 documentos requeridos en la misma pantalla. Cada archivo se guarda de verdad en
+  el servidor (carpeta `uploads/`) y pasa por una revisión automática simulada.
+- **Diseño responsive**: menú con botón de hamburguesa en móvil, tablas con scroll
+  horizontal, y formularios/tarjetas que se apilan en pantallas pequeñas.
+
+## Cómo conectar una IA real para validar documentos
+
+Toda la lógica de "revisión por IA" vive en un solo archivo: **`validacion_ia.py`**.
+Hoy usa una simulación aleatoria (70% aprobado / 15% rechazado / 15% pendiente) para que
+el prototipo se vea completo sin depender de una API externa. El archivo trae, en su
+docstring, el código listo para conectar Claude (Anthropic) con visión: instalar la
+librería `anthropic`, definir `ANTHROPIC_API_KEY` como variable de entorno, implementar
+`_analizar_con_ia_real(...)` y cambiar `USE_REAL_AI = True`. Ningún otro archivo de la
+aplicación necesita tocarse.
 
 ## Cómo montarla en un servidor gratuito (Render)
 
@@ -65,8 +81,10 @@ soporta Flask sin configuración especial. El proyecto ya trae todo lo necesario
   cerca de un minuto en despertar.
 - El disco no es permanente entre reinicios: si el servicio se reinicia, `vigor.db` se
   vuelve a generar desde cero con los datos demo (perderías inscripciones nuevas hechas
-  a mano). Para un dummy está bien; si luego quieres persistencia real, Render también
-  ofrece una base de datos PostgreSQL gratuita por 90 días que podemos conectar.
+  a mano), y los archivos guardados en `uploads/` también se pierden. Para un dummy está
+  bien; si luego quieres persistencia real, Render también ofrece una base de datos
+  PostgreSQL gratuita por 90 días y almacenamiento en disco persistente que podemos
+  conectar.
 
 Alternativa igual de válida y sin tarjeta: **PythonAnywhere**, más manual (subes el
 código y configuras la app Flask desde su panel web) pero muy estable para un solo

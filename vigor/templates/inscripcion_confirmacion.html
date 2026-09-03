@@ -32,6 +32,11 @@
     <p class="muted" style="font-size:0.82rem;border-left:2px solid var(--line);padding-left:10px">{{ info.resumen }}</p>
     {% endif %}
     <p class="muted" style="font-size:0.85rem;margin-top:10px">{{ d.comentario_ia }}</p>
+    {% if d.ruta_archivo %}
+    <a href="{{ url_for('ver_documento_archivo', filename=d.ruta_archivo) }}" target="_blank" class="link" style="display:inline-block;margin-top:8px;font-size:0.85rem;text-decoration:none">
+      <svg class="icon"><use href="#icon-doc"/></svg> Ver archivo cargado ({{ d.nombre_archivo }})
+    </a>
+    {% endif %}
     <form method="post" action="{{ url_for('subir_documento', doc_id=d.id) }}" enctype="multipart/form-data" style="margin-top:14px">
       <input type="file" name="archivo" accept="image/*,application/pdf" style="font-size:0.85rem">
       <button class="btn small secondary" type="submit" style="margin-top:10px">

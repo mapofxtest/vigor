@@ -1,10 +1,17 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, abort
 from datetime import date
+from werkzeug.utils import secure_filename
 import random
+import os
+import uuid
 import db
+import validacion_ia
 
 app = Flask(__name__)
 app.secret_key = "vigor-demo-secret"
+
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 def q(conn, sql, params=()):
@@ -13,6 +20,24 @@ def q(conn, sql, params=()):
 
 def one(conn, sql, params=()):
     return conn.execute(sql, params).fetchone()
+
+
+def _guardar_y_analizar(archivo, tipo_documento):
+    """Guarda el archivo subido en disco (si hay alguno) y ejecuta el análisis de IA
+    (hoy simulado, ver validacion_ia.py). Devuelve (nombre_original, ruta_relativa,
+    estado, comentario, confianza)."""
+    if not archivo or not archivo.filename:
+        estado, comentario, confianza = validacion_ia.analizar_documento(None, tipo_documento)
+        return None, None, estado, comentario, confianza
+
+    nombre_original = secure_filename(archivo.filename) or "documento"
+    extension = os.path.splitext(nombre_original)[1]
+    nombre_disco = f"{uuid.uuid4().hex}{extension}"
+    ruta_absoluta = os.path.join(UPLOAD_DIR, nombre_disco)
+    archivo.save(ruta_absoluta)
+
+    estado, comentario, confianza = validacion_ia.analizar_documento(ruta_absoluta, tipo_documento)
+    return nombre_original, nombre_disco, estado, comentario, confianza
 
 
 # ---------------------------------------------------------------- landing --
@@ -189,6 +214,36 @@ def revisar_documento(doc_id):
     return redirect(request.referrer or url_for("admin_documentos"))
 
 
+@app.route("/admin/documentos-por-club")
+def admin_documentos_por_club():
+    conn = db.get_connection()
+    clubes = q(conn, "SELECT id, nombre FROM clubes ORDER BY nombre")
+    club_id = request.args.get("club_id", type=int)
+    if not club_id and clubes:
+        club_id = clubes[0]["id"]
+
+    jugadores = []
+    club_actual = None
+    if club_id:
+        club_actual = one(conn, "SELECT * FROM clubes WHERE id=?", (club_id,))
+        filas_jugadores = q(conn, """SELECT j.*, p.nombre padre_nombre FROM jugadores j
+                                      LEFT JOIN padres p ON p.id = j.padre_id
+                                      WHERE j.club_id=? ORDER BY j.nombre""", (club_id,))
+        for j in filas_jugadores:
+            docs = q(conn, "SELECT * FROM documentos WHERE jugador_id=? ORDER BY id", (j["id"],))
+            jugadores.append({"jugador": j, "documentos": docs})
+    conn.close()
+    return render_template("admin_documentos_por_club.html", clubes=clubes, club_id=club_id,
+                            club_actual=club_actual, jugadores=jugadores)
+
+
+@app.route("/uploads/<path:filename>")
+def ver_documento_archivo(filename):
+    if not os.path.isfile(os.path.join(UPLOAD_DIR, filename)):
+        abort(404)
+    return send_from_directory(UPLOAD_DIR, filename)
+
+
 @app.route("/admin/partidos/<int:partido_id>")
 def partido_detail(partido_id):
     conn = db.get_connection()
@@ -228,20 +283,7 @@ def seguimiento():
 
 # ------------------------------------------------------------ inscripcion --
 
-COMENTARIOS_IA = {
-    "Aprobado": "La IA confirma que el documento corresponde al tipo solicitado y los datos coinciden con el registro del jugador.",
-    "Rechazado": "La IA no pudo verificar el documento: la imagen está borrosa, no corresponde al tipo solicitado, o parece ser una copia/descarga digital en vez del original físico. Vuelve a cargarlo.",
-    "Pendiente": "El documento requiere revisión manual de un administrador antes de aprobarse.",
-}
-
-
-def _simular_revision_ia(archivo):
-    """Simula la carga y revisión automática de un documento por IA."""
-    if not archivo or not archivo.filename:
-        return None, "Pendiente", "Aún no se ha cargado este documento.", None
-    resultado = random.choices(["Aprobado", "Rechazado", "Pendiente"], weights=[70, 15, 15], k=1)[0]
-    confianza = random.randint(60, 99) if resultado != "Pendiente" else None
-    return archivo.filename, resultado, COMENTARIOS_IA[resultado], confianza
+COMENTARIOS_IA = validacion_ia.COMENTARIOS_SIMULADOS
 
 
 @app.route("/inscripcion", methods=["GET", "POST"])
@@ -292,12 +334,12 @@ def inscripcion_formulario(codigo):
 
         for d in db.DOCUMENTOS_REQUERIDOS:
             archivo = request.files.get(f"archivo_{d['campo']}")
-            nombre_archivo, estado, comentario, confianza = _simular_revision_ia(archivo)
+            nombre_original, ruta_archivo, estado, comentario, confianza = _guardar_y_analizar(archivo, d["tipo"])
             conn.execute("""INSERT INTO documentos
-                (jugador_id, tipo, nombre_archivo, estado, comentario_ia, confianza_ia, fecha_carga)
-                VALUES (?,?,?,?,?,?,?)""",
-                (jugador_id, d["tipo"], nombre_archivo, estado, comentario, confianza,
-                 date.today().isoformat() if nombre_archivo else None))
+                (jugador_id, tipo, nombre_archivo, ruta_archivo, estado, comentario_ia, confianza_ia, fecha_carga)
+                VALUES (?,?,?,?,?,?,?,?)""",
+                (jugador_id, d["tipo"], nombre_original, ruta_archivo, estado, comentario, confianza,
+                 date.today().isoformat() if nombre_original else None))
         conn.commit()
         conn.close()
         return redirect(url_for("inscripcion_confirmacion", jugador_id=jugador_id))
@@ -322,17 +364,18 @@ def inscripcion_confirmacion(jugador_id):
 
 @app.route("/inscripcion/documentos/<int:doc_id>/subir", methods=["POST"])
 def subir_documento(doc_id):
-    """Simula la carga de un documento y su revisión automática por IA."""
+    """Guarda el archivo cargado y ejecuta su revisión automática (simulada por ahora)."""
     conn = db.get_connection()
     doc = one(conn, "SELECT * FROM documentos WHERE id=?", (doc_id,))
     archivo = request.files.get("archivo")
-    nombre_archivo, estado, comentario, confianza = _simular_revision_ia(archivo)
-    if nombre_archivo is None:
-        nombre_archivo = doc["nombre_archivo"] or f"documento_{doc_id}.pdf"
+    nombre_original, ruta_archivo, estado, comentario, confianza = _guardar_y_analizar(archivo, doc["tipo"])
+    if nombre_original is None:
+        nombre_original = doc["nombre_archivo"] or f"documento_{doc_id}.pdf"
+        ruta_archivo = doc["ruta_archivo"]
         estado, comentario = "Pendiente", "El documento requiere revisión manual de un administrador antes de aprobarse."
-    conn.execute("""UPDATE documentos SET nombre_archivo=?, estado=?, comentario_ia=?, confianza_ia=?, fecha_carga=?
-                     WHERE id=?""",
-                 (nombre_archivo, estado, comentario, confianza, date.today().isoformat(), doc_id))
+    conn.execute("""UPDATE documentos SET nombre_archivo=?, ruta_archivo=?, estado=?, comentario_ia=?,
+                     confianza_ia=?, fecha_carga=? WHERE id=?""",
+                 (nombre_original, ruta_archivo, estado, comentario, confianza, date.today().isoformat(), doc_id))
     conn.commit()
     jugador_id = doc["jugador_id"]
     conn.close()

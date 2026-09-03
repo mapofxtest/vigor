@@ -17,13 +17,18 @@
 </div>
 
 <div class="doc-tabs">
+  <a href="{{ url_for('admin_documentos', estado=estado_filtro) }}" class="active">Por estado</a>
+  <a href="{{ url_for('admin_documentos_por_club') }}">Por club</a>
+</div>
+
+<div class="doc-tabs">
   <a href="{{ url_for('admin_documentos', estado='Pendiente') }}" class="{{ 'active' if estado_filtro=='Pendiente' }}">Pendientes</a>
   <a href="{{ url_for('admin_documentos', estado='Rechazado') }}" class="{{ 'active' if estado_filtro=='Rechazado' }}">Rechazados</a>
   <a href="{{ url_for('admin_documentos', estado='Aprobado') }}" class="{{ 'active' if estado_filtro=='Aprobado' }}">Aprobados</a>
 </div>
 
 {% if docs %}
-<table>
+<div class="table-scroll"><table>
   <thead>
     <tr><th>Jugador</th><th>Club</th><th>Tipo de documento</th><th>Comentario de la IA</th><th>Cargado</th><th></th></tr>
   </thead>
@@ -52,7 +57,7 @@
     </tr>
     {% endfor %}
   </tbody>
-</table>
+</table></div>
 {% else %}
 <div class="empty">No hay documentos en estado "{{ estado_filtro }}".</div>
 {% endif %}

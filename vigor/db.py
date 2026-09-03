@@ -85,6 +85,7 @@ CREATE TABLE documentos (
     jugador_id INTEGER NOT NULL,
     tipo TEXT NOT NULL,
     nombre_archivo TEXT,
+    ruta_archivo TEXT,
     estado TEXT DEFAULT 'Pendiente',
     comentario_ia TEXT,
     confianza_ia INTEGER,

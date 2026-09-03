@@ -14,7 +14,7 @@
 <div class="two-col section">
   <div>
     <div class="section-head"><h2>Jugadores ({{ jugadores|length }})</h2></div>
-    <table>
+    <div class="table-scroll"><table>
       <thead><tr><th>Nombre</th><th>Categoría</th><th>Posición</th><th>Acudiente</th></tr></thead>
       <tbody>
         {% for j in jugadores %}
@@ -26,19 +26,19 @@
         </tr>
         {% endfor %}
       </tbody>
-    </table>
+    </table></div>
   </div>
 
   <div>
     <div class="section-head"><h2>Cuerpo técnico</h2></div>
-    <table>
+    <div class="table-scroll"><table>
       <thead><tr><th>Nombre</th><th>Rol</th></tr></thead>
       <tbody>
         {% for s in staff %}
         <tr><td>{{ s.nombre }}</td><td>{{ s.rol }}</td></tr>
         {% endfor %}
       </tbody>
-    </table>
+    </table></div>
 
     <h3 style="margin-top:32px">Inscribir staff</h3>
     <form method="post" class="form-card" style="margin-top:14px">

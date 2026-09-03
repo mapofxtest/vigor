@@ -372,6 +372,72 @@ td.num, th.num { text-align: center; }
   .scoreboard .stat { flex: 1 1 50%; border-left: none; border-top: 1px solid var(--line); }
 }
 
+/* ------------------------------------------------------- table scroll -- */
+
+.table-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ----------------------------------------------------------- mobile nav -- */
+
+.nav-toggle {
+  display: none;
+  background: none;
+  border: 2px solid var(--ink);
+  color: var(--ink);
+  padding: 6px 12px;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .container { padding: 0 18px; }
+  .topbar-inner { padding: 14px 18px; }
+  .brand .tagline { display: none; }
+  .nav-toggle { display: inline-flex; }
+
+  .navlinks {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    gap: 0;
+    border-top: 1px solid var(--line);
+    margin-top: 14px;
+    order: 3;
+  }
+  .navlinks.open { display: flex; }
+  .navlinks a {
+    padding: 13px 2px;
+    border-bottom: 1px solid var(--line);
+    border-left: none;
+  }
+  .navlinks a.active { background: var(--green-tint); border-bottom-color: var(--line); }
+
+  h1 { font-size: clamp(1.7rem, 8vw, 2.4rem); }
+  .hero { padding: 32px 0 22px; }
+
+  .scoreboard .stat { flex: 1 1 50%; padding: 16px 14px; }
+  .scoreboard .stat .num { font-size: 2.1rem; }
+
+  .form-card { padding: 20px; max-width: 100%; }
+  .role-grid { grid-template-columns: 1fr; }
+  .tile-grid { grid-template-columns: repeat(2, 1fr); }
+
+  .table-scroll table { min-width: 560px; }
+
+  .section-head { flex-direction: column; align-items: flex-start; }
+}
+
+@media (max-width: 480px) {
+  .tile-grid { grid-template-columns: 1fr; }
+  .scoreboard .stat { flex: 1 1 100%; border-top: 1px solid var(--line); }
+  .field-row { grid-template-columns: 1fr; }
+  .match-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .match-row .meta { text-align: left; min-width: 0; }
+  .doc-tabs { flex-wrap: wrap; }
+  h1 { font-size: 1.6rem; }
+  .scoreboard .stat .num { font-size: 1.9rem; }
+}
+
 .empty {
   padding: 40px 0;
   color: var(--ink-soft);

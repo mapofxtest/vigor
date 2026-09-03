@@ -20,7 +20,7 @@
 <div class="section">
   <h2>Cronología</h2>
   {% if eventos %}
-  <table>
+  <div class="table-scroll"><table>
     <thead><tr><th class="num">Min</th><th>Evento</th><th>Jugador</th></tr></thead>
     <tbody>
       {% for e in eventos %}
@@ -34,7 +34,7 @@
       </tr>
       {% endfor %}
     </tbody>
-  </table>
+  </table></div>
   {% else %}
   <div class="empty">Este partido todavía no tiene eventos registrados.</div>
   {% endif %}
