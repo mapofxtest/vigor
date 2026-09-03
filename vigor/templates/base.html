@@ -33,14 +33,37 @@
 
 <div class="page">
   <div class="container">
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        {% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}
-      {% endif %}
-    {% endwith %}
     {% block content %}{% endblock %}
   </div>
 </div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="toast-stack" id="toast-stack">
+    {% for category, m in messages %}
+      <div class="toast toast-{{ category }}">
+        <svg class="icon">
+          <use href="#{{ 'icon-x' if category == 'error' else ('icon-clock' if category == 'warning' else 'icon-check') }}"/>
+        </svg>
+        <span>{{ m }}</span>
+        <button type="button" class="toast-close" aria-label="Cerrar" onclick="this.closest('.toast').remove()">&times;</button>
+      </div>
+    {% endfor %}
+  </div>
+  <script>
+    (function () {
+      var stack = document.getElementById('toast-stack');
+      if (!stack) return;
+      setTimeout(function () {
+        stack.querySelectorAll('.toast').forEach(function (t) {
+          t.classList.add('toast-hide');
+          setTimeout(function () { t.remove(); }, 400);
+        });
+      }, 4500);
+    })();
+  </script>
+  {% endif %}
+{% endwith %}
 
 </body>
 </html>

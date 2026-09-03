@@ -390,9 +390,12 @@ def inscripcion_formulario(codigo):
              request.form["padre_telefono"], request.form.get("observaciones_medicas") or "Ninguna"))
         jugador_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 
+        faltantes = []
         for d in db.DOCUMENTOS_REQUERIDOS:
             archivo = request.files.get(f"archivo_{d['campo']}")
             nombre_original, ruta_archivo, estado_ia, comentario_ia, confianza = _guardar_y_analizar(archivo, d["tipo"])
+            if nombre_original is None:
+                faltantes.append(d["tipo"])
             conn.execute("""INSERT INTO documentos
                 (jugador_id, tipo, nombre_archivo, ruta_archivo, estado, estado_ia, comentario_ia, confianza_ia, fecha_carga)
                 VALUES (?,?,?,?,?,?,?,?,?)""",
@@ -400,6 +403,13 @@ def inscripcion_formulario(codigo):
                  confianza, date.today().isoformat() if nombre_original else None))
         conn.commit()
         conn.close()
+
+        if faltantes:
+            flash(f"Inscripción guardada, pero falta cargar {len(faltantes)} de 3 documentos: "
+                  f"{', '.join(faltantes)}. Puedes subirlos apenas los tengas a la mano.", "warning")
+        else:
+            flash("Inscripción y documentos guardados con éxito. La IA ya hizo su pre-validación; "
+                  "el administrador confirmará el resultado final.", "success")
         return redirect(url_for("inscripcion_confirmacion", jugador_id=jugador_id))
 
     conn.close()
@@ -433,7 +443,7 @@ def subir_documento(doc_id):
     if nombre_original is None:
         # No se seleccionó ningún archivo nuevo: no tocar el archivo existente.
         conn.close()
-        flash("No seleccionaste ningún archivo.", "success")
+        flash("No seleccionaste ningún archivo. Elige un archivo antes de subir.", "warning")
         return redirect(url_for("inscripcion_confirmacion", jugador_id=doc["jugador_id"]))
 
     # Se cargó un archivo nuevo: borrar el anterior (si estaba incorrecto) y reemplazar.
@@ -446,6 +456,8 @@ def subir_documento(doc_id):
     conn.commit()
     jugador_id = doc["jugador_id"]
     conn.close()
+    flash(f'"{doc["tipo"]}" se guardó con éxito. La IA ya hizo su pre-validación; '
+          f"queda a la espera de confirmación del administrador.", "success")
     return redirect(url_for("inscripcion_confirmacion", jugador_id=jugador_id))
 
 
