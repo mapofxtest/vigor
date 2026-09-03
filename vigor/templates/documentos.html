@@ -19,9 +19,9 @@
 <div class="two-col" style="grid-template-columns: 1fr 1fr 1fr; max-width:820px; align-items:end; margin-top:10px">
   <form method="get" class="field" style="margin-bottom:0">
     <label for="club_id">Club</label>
+    <input type="hidden" name="q" value="{{ busqueda }}">
+    <input type="hidden" name="mostrar" value="{{ mostrar }}">
     <select id="club_id" name="club_id" onchange="this.form.submit()">
-      <input type="hidden" name="q" value="{{ busqueda }}">
-      <input type="hidden" name="mostrar" value="{{ mostrar }}">
       <option value="">Todos los clubes</option>
       {% for c in clubes %}
         <option value="{{ c.id }}" {{ 'selected' if c.id == club_id }}>{{ c.nombre }}</option>
